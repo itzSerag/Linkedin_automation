@@ -111,7 +111,14 @@ app.post('/api/config', (req, res) => {
 
   if (profile) currentConfig.profile = { ...currentConfig.profile, ...profile };
   if (ai) currentConfig.ai = { ...currentConfig.ai, ...ai };
-  if (automation) currentConfig.automation = { ...currentConfig.automation, ...automation };
+  if (automation) {
+    currentConfig.automation = { ...currentConfig.automation, ...automation };
+    if (automation.languageMode === 'EN') {
+      currentConfig.automation.nextLanguage = 'EN';
+    } else if (automation.languageMode === 'AR') {
+      currentConfig.automation.nextLanguage = 'AR';
+    }
+  }
   if (style) currentConfig.style = { ...currentConfig.style, ...style };
 
   saveConfig(currentConfig);
@@ -398,9 +405,38 @@ app.post('/api/generate-preview', async (req, res) => {
   try {
     const config = loadConfig();
     const profile = config.profile || {};
-    const targetLang = language || config.automation?.nextLanguage || 'EN';
+    const automation = config.automation || {};
+    const ideas = loadIdeas();
+
+    // 1. Strictly respect languageMode
+    let targetLang = 'EN';
+    if (automation.languageMode === 'AR') {
+      targetLang = 'AR';
+    } else if (automation.languageMode === 'EN') {
+      targetLang = 'EN';
+    } else {
+      targetLang = language || automation.nextLanguage || 'EN';
+    }
+
+    // 2. Select topic from idea bank if not specified
+    let chosenTopic = topic;
+    if (!chosenTopic) {
+      const pendingIdea = ideas.find(i => i.status === 'pending' && i.language === targetLang) ||
+                          (automation.languageMode === 'alternate' ? ideas.find(i => i.status === 'pending') : null);
+      if (pendingIdea) {
+        chosenTopic = pendingIdea.topic;
+        if (automation.languageMode === 'alternate') {
+          targetLang = pendingIdea.language || targetLang;
+        }
+      } else {
+        chosenTopic = targetLang === 'AR'
+          ? 'أهمية معالجة Concurrency و Race Conditions في الـ Database'
+          : 'Database Connection Pooling vs Horizontal Scaling in Node.js';
+      }
+    }
+
     const draft = await generatePostWithAI({
-      topic: topic || 'Database Connection Pooling vs Horizontal Scaling',
+      topic: chosenTopic,
       language: targetLang,
       level: profile.yearsOfExperience || 'Mid'
     });

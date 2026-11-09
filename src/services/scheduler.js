@@ -20,9 +20,14 @@ export async function executePostPipeline({
   const ideas = loadIdeas();
 
   // 1. Determine Language
-  let targetLang = languageOverride || automation.nextLanguage || 'EN';
-  if (automation.languageMode === 'alternate' && !languageOverride) {
-    targetLang = automation.nextLanguage === 'AR' ? 'AR' : 'EN';
+  let targetLang = 'EN';
+  if (automation.languageMode === 'EN') {
+    targetLang = 'EN';
+  } else if (automation.languageMode === 'AR') {
+    targetLang = 'AR';
+  } else {
+    // Alternate mode
+    targetLang = languageOverride || automation.nextLanguage || 'EN';
   }
 
   // 2. Pick Topic
@@ -30,14 +35,15 @@ export async function executePostPipeline({
   let topic = topicOverride;
 
   if (!topic) {
-    // Find next pending idea matching target language or any pending
+    // Find next pending idea matching target language
     selectedIdea = ideas.find(i => i.status === 'pending' && i.language === targetLang) ||
-                   ideas.find(i => i.status === 'pending') ||
-                   null;
+                   (automation.languageMode === 'alternate' ? ideas.find(i => i.status === 'pending') : null);
 
     if (selectedIdea) {
       topic = selectedIdea.topic;
-      targetLang = selectedIdea.language || targetLang;
+      if (automation.languageMode === 'alternate') {
+        targetLang = selectedIdea.language || targetLang;
+      }
     } else {
       // Fallback topic if ideas are empty
       topic = targetLang === 'AR'

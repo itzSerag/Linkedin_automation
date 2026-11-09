@@ -199,7 +199,12 @@ export default function App() {
     setIsModalOpen(true);
     setIsDraftLoading(true);
     try {
-      const targetLang = lang || status.automation?.nextLanguage || 'EN';
+      let targetLang = lang;
+      if (!targetLang) {
+        if (config.automation?.languageMode === 'EN') targetLang = 'EN';
+        else if (config.automation?.languageMode === 'AR') targetLang = 'AR';
+        else targetLang = status.automation?.nextLanguage || 'EN';
+      }
       const res = await fetch('/api/generate-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -453,7 +458,7 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         draft={currentDraft}
         isLoading={isDraftLoading}
-        onRegenerate={() => openPreview(currentDraft?.topic, currentDraft?.language)}
+        onRegenerate={() => openPreview(null, null)}
         onPublish={handlePublishFromModal}
         onCopy={handleCopyText}
       />
