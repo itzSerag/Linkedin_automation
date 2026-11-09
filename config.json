@@ -16,19 +16,23 @@
     "openaiModel": "gpt-4o"
   },
   "automation": {
-    "enabled": false,
+    "enabled": true,
     "cronSchedule": "45 8 * * *",
     "timezone": "Africa/Cairo",
     "languageMode": "alternate",
     "nextLanguage": "AR",
     "includeVisualCard": true,
     "autoPostFirstComment": true,
-    "notifyTelegram": true
+    "notifyTelegram": true,
+    "goldenHourAlert": true
   },
   "style": {
-    "targetCharMin": 900,
+    "targetCharMin": 850,
     "targetCharMax": 1300,
     "maxHashtags": 3,
-    "tone": "Insightful, practical, engineering-first, humble yet authoritative, no corporate buzzword fluff"
+    "tone": "Ultra-human, pragmatic, engineering-first, production-tested, zero corporate buzzwords",
+    "endingStyle": "strong_conclusion",
+    "includeGithubInComment": false,
+    "preserveEnglishConcepts": true
   }
 }

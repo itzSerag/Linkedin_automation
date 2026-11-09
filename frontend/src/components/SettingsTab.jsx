@@ -41,11 +41,18 @@ export default function SettingsTab({
   const [autoFirstComment, setAutoFirstComment] = useState('true');
   const [goldenHourAlert, setGoldenHourAlert] = useState('true');
 
+  const [endingStyle, setEndingStyle] = useState('strong_conclusion');
+  const [includeGithubInComment, setIncludeGithubInComment] = useState('false');
+
   useEffect(() => {
     if (config.ai) {
       setAiProvider(config.ai.provider || 'gemini');
       setGeminiModel(config.ai.geminiModel || 'gemini-2.5-pro');
       setOpenaiModel(config.ai.openaiModel || 'gpt-4o');
+    }
+    if (config.style) {
+      setEndingStyle(config.style.endingStyle || 'strong_conclusion');
+      setIncludeGithubInComment(String(config.style.includeGithubInComment ?? false));
     }
     if (config.automation) {
       setAutoSchedule(String(config.automation.enabled ?? false));
@@ -68,6 +75,12 @@ export default function SettingsTab({
     e.preventDefault();
     onSave({
       ai: { provider: aiProvider, geminiModel, openaiModel },
+      style: {
+        endingStyle,
+        includeGithubInComment: includeGithubInComment === 'true',
+        preserveEnglishConcepts: true,
+        tone: 'Ultra-human, pragmatic, engineering-first, zero corporate buzzwords'
+      },
       automation: {
         enabled: autoSchedule === 'true',
         cronSchedule,
@@ -330,6 +343,47 @@ export default function SettingsTab({
             <div className="space-y-1">
               <label className="text-xs font-medium text-slate-400">API Secret</label>
               <Input type="password" value={cloudSecret} onChange={(e) => setCloudSecret(e.target.value)} placeholder="API Secret" className="font-mono text-xs" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Human Voice & Post Style */}
+        <Card className="p-6 border-blue-500/30 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              Human Voice & Post Structure Rules
+            </h3>
+            <Badge variant="default">Anti-AI Fluff</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Post Ending Style</label>
+              <Select value={endingStyle} onChange={(e) => setEndingStyle(e.target.value)}>
+                <option value="strong_conclusion">Strong Engineering Conclusion (No Question - 100% Human)</option>
+                <option value="question">Thought-Provoking Question (Interactive)</option>
+                <option value="mixed">Mixed / Alternating</option>
+              </Select>
+              <p className="text-xs text-slate-500">Eliminates robotic "What do you think?" endings.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Include GitHub Link in 1st Comment</label>
+              <Select value={includeGithubInComment} onChange={(e) => setIncludeGithubInComment(e.target.value)}>
+                <option value="false">No (Clean / Zero self-promotion in comment)</option>
+                <option value="true">Yes (Post GitHub / Portfolio link in 1st comment)</option>
+              </Select>
+              <p className="text-xs text-slate-500">Keeps posts non-promotional when disabled.</p>
+            </div>
+
+            <div className="sm:col-span-2 p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-slate-200">Preserve Technical Terms in English</span>
+                <p className="text-xs text-slate-500">
+                  In Arabic posts, terms like <code>PostgreSQL</code>, <code>Redis</code>, <code>Connection Pool</code>, <code>Index</code>, <code>Race Condition</code>, and <code>Query</code> will always stay in English with Latin letters.
+                </p>
+              </div>
+              <Badge variant="success">Always Active</Badge>
             </div>
           </div>
         </Card>
