@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794250712074",
+    "topic": "Why indexing isn't just 'put an index on every foreign key' - the real cost of indexes in PostgreSQL",
+    "language": "EN",
+    "hook": "Adding an index to every foreign key is one of the fastest ways to degrade PostgreSQL write throughput in production.",
+    "postText": "Adding an index to every foreign key is one of the fastest ways to degrade PostgreSQL write throughput in production.\n\nUnder heavy traffic, unmeasured indexes aren't free optimizations. They are a continuous tax on your database.\n\nHere is what actually happens under the hood when you blindly index:\n\n1. Write Amplification & Broken HOT Updates\nEvery INSERT, UPDATE, or DELETE forces Postgres to write to every index page. Updating a row with 8 indexes creates 8 additional index writes, disabling Heap-Only Tuple (HOT) optimizations.\n\n2. Shared Buffer Contamination\nIndexes need memory to stay fast. Unused B-tree pages hog space in shared_buffers, constantly evicting actual warm cache data required by active queries.\n\n3. Autovacuum Pressure & IOPS Bloat\nMore indexes mean slower autovacuum runs. Bloated index trees cause random I/O spikes, degrading disk performance over time.\n\nIndexes should strictly serve actual query patterns analyzed via EXPLAIN ANALYZE, not defensive assumptions.\n\nA missing index causes one slow query. Five unnecessary indexes degrade every single write across your entire table.\n\n#postgresql #backend #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794250710/linkedin_posts/post_1794250710182_1794250710183.png",
+    "isLocalMedia": false,
+    "cardType": "benchmark",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7525632936532942849",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7525632936532942849/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-09T18:58:32.075Z"
+  },
+  {
     "id": "post_1794239149168",
     "topic": "Why indexing isn't just 'put an index on every foreign key' - the real cost of indexes in PostgreSQL",
     "language": "EN",
