@@ -168,34 +168,47 @@ You MUST respond strictly in valid JSON matching this schema:
     return getFallbackDraft({ topic, language, level, profile, style });
   }
 
-  try {
-    const model = aiConfig.geminiModel || 'gemini-2.5-pro';
-    console.log(`[AI] Generating post with Gemini model: ${model}`);
-    const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json'
-      }
-    });
+  const primaryModel = aiConfig.geminiModel || 'gemini-3.5-flash';
+  const candidateModels = Array.from(new Set([
+    primaryModel,
+    'gemini-3.5-flash',
+    'gemini-3.8-flash',
+    'gemini-3.1-flash-lite'
+  ]));
 
-    const parsed = JSON.parse(response.text.trim());
-    return {
-      success: true,
-      ...parsed,
-      language,
-      topic,
-      modelUsed: `Gemini ${model}`
-    };
-  } catch (error) {
-    console.error('Gemini generation error:', error);
-    const fallback = getFallbackDraft({ topic, language, level, profile, style });
-    return {
-      ...fallback,
-      warning: `Gemini API call failed: ${error.message}. Returned template preview.`
-    };
+  let lastError = null;
+  for (const model of candidateModels) {
+    try {
+      console.log(`[AI] Generating post with Gemini model: ${model}`);
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      const parsed = JSON.parse(response.text.trim());
+      return {
+        success: true,
+        ...parsed,
+        language,
+        topic,
+        modelUsed: `Gemini ${model}`
+      };
+    } catch (error) {
+      console.warn(`[AI] Gemini model ${model} failed: ${error.message}. Trying next candidate...`);
+      lastError = error;
+    }
   }
+
+  console.error('All Gemini candidate models failed:', lastError);
+  const fallback = getFallbackDraft({ topic, language, level, profile, style });
+  return {
+    ...fallback,
+    warning: `Gemini API call failed: ${lastError?.message}. Returned template preview.`
+  };
 }
 
 // Backward-compatible alias
