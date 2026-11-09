@@ -7,6 +7,7 @@ export default function PostPreviewModal({
   onClose,
   draft,
   isLoading,
+  isPublishing,
   onRegenerate,
   onPublish,
   onCopy
@@ -111,16 +112,26 @@ export default function PostPreviewModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/60">
-          <Button variant="secondary" onClick={onRegenerate} disabled={isLoading} size="sm">
-            <RefreshCw className="w-3.5 h-3.5" /> Regenerate
+          <Button variant="secondary" onClick={onRegenerate} disabled={isLoading || isPublishing} size="sm">
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Regenerate
           </Button>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={onCopy} disabled={!draft || isLoading} size="sm">
+            <Button variant="outline" onClick={onCopy} disabled={!draft || isLoading || isPublishing} size="sm">
               <Copy className="w-3.5 h-3.5" /> Copy Text
             </Button>
-            <Button variant="default" onClick={onPublish} disabled={!draft || isLoading} size="sm">
-              <Send className="w-3.5 h-3.5" /> Publish Now
+            <Button variant="default" onClick={onPublish} disabled={!draft || isLoading || isPublishing} size="sm">
+              {isPublishing ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Publishing...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Publish Now</span>
+                </>
+              )}
             </Button>
           </div>
         </div>

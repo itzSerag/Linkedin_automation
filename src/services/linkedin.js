@@ -1,4 +1,6 @@
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 import { loadEnv, updateEnv } from '../config.js';
 
 const LINKEDIN_API_VERSION = '202511';
@@ -102,7 +104,7 @@ export async function uploadImageToLinkedIn(imageBuffer) {
   return imageUrn;
 }
 
-export async function publishLinkedInPost({ text, imageBuffer, firstCommentText }) {
+export async function publishLinkedInPost({ text, imageBuffer, imageUrl, firstCommentText }) {
   const env = loadEnv();
   const accessToken = env.LINKEDIN_ACCESS_TOKEN;
   const memberId = env.LINKEDIN_MEMBER_ID;
@@ -115,10 +117,27 @@ export async function publishLinkedInPost({ text, imageBuffer, firstCommentText 
     };
   }
 
-  let imageUrn = null;
-  if (imageBuffer) {
+  let finalBuffer = imageBuffer;
+  if (!finalBuffer && imageUrl) {
     try {
-      imageUrn = await uploadImageToLinkedIn(imageBuffer);
+      if (imageUrl.startsWith('http://localhost') || imageUrl.startsWith('/media/')) {
+        const localPath = path.resolve('src/public' + imageUrl.replace(/^https?:\/\/[^\/]+/, ''));
+        if (fs.existsSync(localPath)) {
+          finalBuffer = fs.readFileSync(localPath);
+        }
+      } else {
+        const imgRes = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000 });
+        finalBuffer = Buffer.from(imgRes.data);
+      }
+    } catch (fetchErr) {
+      console.warn('Failed to fetch image from URL for LinkedIn upload:', fetchErr.message);
+    }
+  }
+
+  let imageUrn = null;
+  if (finalBuffer) {
+    try {
+      imageUrn = await uploadImageToLinkedIn(finalBuffer);
     } catch (imgErr) {
       console.warn('Image upload to LinkedIn failed, falling back to text-only post:', imgErr.message);
     }

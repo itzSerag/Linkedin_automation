@@ -1,5 +1,50 @@
 [
   {
+    "id": "idea-ai-1794252243298-0",
+    "topic": "Why Node.js `pg-pool` default configurations fail under 10k RPS: Libuv thread pool starvation vs PostgreSQL max_connections",
+    "category": "Backend / Database",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T19:24:03.298Z"
+  },
+  {
+    "id": "idea-ai-1794252243298-1",
+    "topic": "Stop using Redis as a Session Store without configuring eviction policies: How `allkeys-lru` silently destroys active JWT blacklists during memory spikes",
+    "category": "Backend / Redis",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T19:24:03.298Z"
+  },
+  {
+    "id": "idea-ai-1794252243298-2",
+    "topic": "The React-Express payload bottleneck: How naive REST API schemas cause client-side N+1 fetch waterfalls and trigger Docker container CPU throttling",
+    "category": "Fullstack / System Design",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T19:24:03.298Z"
+  },
+  {
+    "id": "idea-ai-1794252243298-3",
+    "topic": "مشكلة الـ Cache Stampede في Node.js & Redis: كيف تتسبب الـ Thundering Herd Problem في إسقاط قاعدة بيانات PostgreSQL وكيف تحلها باستراتيجية Probabilistic Early Expiration (XFetch)",
+    "category": "System Design / Caching",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-09T19:24:03.298Z"
+  },
+  {
+    "id": "idea-ai-1794252243298-4",
+    "topic": "لماذا تتوقف استجابة الـ Event Loop في Express رغم استخدام Async/Await؟ تحليل مشكلة CPU-Bound Tasks داخل Docker وكيف يحلها ضبط `UV_THREADPOOL_SIZE` و Worker Threads",
+    "category": "Backend / Architecture",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-09T19:24:03.298Z"
+  },
+  {
     "id": "idea-1",
     "topic": "Why indexing isn't just 'put an index on every foreign key' - the real cost of indexes in PostgreSQL",
     "category": "Backend & Database",

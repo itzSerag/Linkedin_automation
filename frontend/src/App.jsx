@@ -29,6 +29,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDraft, setCurrentDraft] = useState(null);
   const [isDraftLoading, setIsDraftLoading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
@@ -220,27 +221,29 @@ export default function App() {
   };
 
   const handlePublishFromModal = async () => {
-    setIsModalOpen(false);
-    addToast('🚀 Publishing to LinkedIn & notifying Telegram...', 'info');
+    if (!currentDraft || isPublishing) return;
+    setIsPublishing(true);
+    addToast('🚀 Publishing previewed post to LinkedIn...', 'info');
     try {
-      const res = await fetch('/api/run-now', {
+      const res = await fetch('/api/publish-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: currentDraft?.topic || null,
-          language: currentDraft?.language || null,
-          forcePublish: true
-        })
+        body: JSON.stringify({ draft: currentDraft })
       });
       const data = await res.json();
+      setIsModalOpen(false);
       if (data.publishResult?.success) {
         addToast('🎉 Published to LinkedIn successfully!', 'success');
+      } else if (data.isDuplicate) {
+        addToast(`⚠️ ${data.message}`, 'warning');
       } else {
-        addToast(`ℹ️ ${data.publishResult?.message || 'Generated as draft'}`, 'info');
+        addToast(`ℹ️ ${data.publishResult?.message || data.message || 'Saved as draft'}`, 'info');
       }
       await fetchAll();
     } catch (e) {
       addToast('❌ Failed to publish', 'error');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -458,6 +461,7 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         draft={currentDraft}
         isLoading={isDraftLoading}
+        isPublishing={isPublishing}
         onRegenerate={() => openPreview(null, null)}
         onPublish={handlePublishFromModal}
         onCopy={handleCopyText}

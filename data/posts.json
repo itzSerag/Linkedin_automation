@@ -1,5 +1,47 @@
 [
   {
+    "id": "post_1794252667693",
+    "topic": "Why Node.js `pg-pool` default configurations fail under 10k RPS: Libuv thread pool starvation vs PostgreSQL max_connections",
+    "language": "EN",
+    "hook": "When your Node.js app hits 10k RPS, the default `pg` pool settings don't just become a bottleneck—they become a liability.",
+    "postText": "When your Node.js app hits 10k RPS, the default `pg` pool settings don't just become a bottleneck—they become a liability.\n\nMost developers leave the pool size at 10. While this is safe for a hobby app, it creates a silent failure mode in high-concurrency production environments.\n\nHere is what happens under load:\n\n1. Libuv Thread Starvation: Since the `pg` driver uses the internal thread pool for DNS lookups and connection establishment, spawning too many connections simultaneously locks your event loop's ability to handle I/O.\n\n2. Connection Churn: If your pool size is too small, you enter a cycle of opening and closing sockets. This adds TCP handshake latency to every single request.\n\n3. Postgres Max Connections: Simply increasing the pool size globally without accounting for `max_connections` on the DB side leads to \"too many clients\" errors, resulting in hard 500s across the cluster.\n\nTune your pool size based on the number of CPU cores and average query latency, not just by guessing. If you hit 10k RPS, you should be moving toward a dedicated connection pooler like PgBouncer to keep your Node.js processes lean and your database stable.\n\nArchitecture is about managing resource contention, not just writing features.\n\n#nodejs #postgresql #systemdesign",
+    "firstCommentText": "If you are running at this scale, keep an eye on your TCP TIME_WAIT states as well.",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794252658/linkedin_posts/post_1794252657199_1794252657201.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7525641115614724098",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7525641115614724098/",
+    "firstCommentStatus": "failed: Not enough permissions to access: partnerApiSocialActions.CREATE.20251101",
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-09T19:31:07.693Z"
+  },
+  {
+    "id": "post_1794252247482",
+    "topic": "Connection Pooling in Node.js & PostgreSQL: The silent memory and socket bottleneck when traffic spikes",
+    "language": "EN",
+    "hook": "When a Node.js service chokes during a sudden traffic spike, the default reaction is usually: spin up more replicas.\n\nIn PostgreSQL architectures, that is often the exact move that takes down production.",
+    "postText": "When a Node.js service chokes during a sudden traffic spike, the default reaction is usually: spin up more replicas.\n\nIn PostgreSQL architectures, that is often the exact move that takes down production.\n\nNode.js handles thousands of concurrent requests effortlessly using an asynchronous event loop. But PostgreSQL is process-based: every direct client connection spawns a dedicated backend process with its own memory allocation, socket descriptor, and CPU overhead.\n\nHere is how the silent bottleneck unfolds:\n\n1. Aggressive Horizontal Scaling\nYou scale from 5 to 25 containers during peak hours. If each Node instance maintains a default pool of 20 connections, Postgres is suddenly forced to manage 500 active processes.\n\n2. Context Switching & Lock Contention\nInstead of executing queries, database CPU cores burn cycles switching between competing processes. Cache hits drop, memory pressure surges, and query latencies spike 10x.\n\n3. Client Pool Starvation\nBack in Node.js, requests queue up waiting for an open connection from `pg.Pool`. Sockets time out, and cascading 504 errors hit upstream users.\n\nScaling backend containers without connection governance does not absorb traffic—it turns an API spike into an unrecoverable database lock storm.\n\nA lean app pool paired with an external pooler like PgBouncer in transaction mode will always out-scale raw container replication.\n\n#backend #postgresql #systemdesign",
+    "firstCommentText": "A quick rule of thumb for `pg.Pool`: start with `max: 5` to `10` per container. Most I/O-bound Node workloads achieve higher throughput with smaller pool sizes than developers expect.",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794252239/linkedin_posts/post_1794252236859_1794252236861.png",
+    "isLocalMedia": false,
+    "cardType": "benchmark",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7525639352740331520",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7525639352740331520/",
+    "firstCommentStatus": "failed: Not enough permissions to access: partnerApiSocialActions.CREATE.20251101",
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-09T19:24:07.482Z"
+  },
+  {
     "id": "post_1794250712074",
     "topic": "Why indexing isn't just 'put an index on every foreign key' - the real cost of indexes in PostgreSQL",
     "language": "EN",

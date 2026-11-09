@@ -28,7 +28,7 @@ import {
 import { testCloudinaryConnection, uploadImageToCloudinary } from './services/cloudinary.js';
 import { generateVisualCard } from './services/visualCard.js';
 import { testTelegramConnection } from './services/telegram.js';
-import { executePostPipeline, initScheduler } from './services/scheduler.js';
+import { executePostPipeline, publishExistingDraft, initScheduler } from './services/scheduler.js';
 import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -382,7 +382,7 @@ app.get('/api/telegram/auto-detect', async (req, res) => {
   }
 });
 
-// 7. Manual Pipeline Trigger
+// 7. Manual Pipeline Trigger (Full Generate + Publish)
 app.post('/api/run-now', async (req, res) => {
   const { topic, language, forcePublish } = req.body;
   try {
@@ -396,6 +396,21 @@ app.post('/api/run-now', async (req, res) => {
   } catch (error) {
     console.error('Pipeline manual execution failed:', error);
     res.status(500).json({ error: error.message || 'Pipeline execution failed' });
+  }
+});
+
+// 7.1 Publish Existing Previewed Draft (Direct Publish - Zero Duplicate Generation)
+app.post('/api/publish-draft', async (req, res) => {
+  const { draft } = req.body;
+  if (!draft || !draft.postText) {
+    return res.status(400).json({ error: 'Valid draft with postText is required' });
+  }
+  try {
+    const result = await publishExistingDraft(draft);
+    res.json(result);
+  } catch (error) {
+    console.error('Direct draft publishing failed:', error);
+    res.status(500).json({ error: error.message || 'Failed to publish draft' });
   }
 });
 
