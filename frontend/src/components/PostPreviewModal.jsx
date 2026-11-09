@@ -88,6 +88,21 @@ export default function PostPreviewModal({
                 </label>
                 <Input value={draft.firstCommentText || ''} readOnly className="text-xs" />
               </div>
+
+              {/* Visual Card Preview */}
+              {draft.mediaUrl && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-300">Generated Technical Visual Card:</label>
+                    <a href={draft.mediaUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline font-medium">Open Full Card</a>
+                  </div>
+                  <img
+                    src={draft.mediaUrl}
+                    alt="Visual Card Preview"
+                    className="w-full h-auto rounded-xl border border-slate-800 shadow-md object-cover max-h-56"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-12 text-center text-xs text-slate-500">No draft loaded.</div>

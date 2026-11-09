@@ -25,7 +25,8 @@ import {
   testOpenAIConnection,
   generatePostWithAI
 } from './services/gemini.js';
-import { testCloudinaryConnection } from './services/cloudinary.js';
+import { testCloudinaryConnection, uploadImageToCloudinary } from './services/cloudinary.js';
+import { generateVisualCard } from './services/visualCard.js';
 import { testTelegramConnection } from './services/telegram.js';
 import { executePostPipeline, initScheduler } from './services/scheduler.js';
 import { GoogleGenAI } from '@google/genai';
@@ -391,16 +392,36 @@ app.post('/api/run-now', async (req, res) => {
   }
 });
 
-// 8. Preview Generator (Draft only)
+// 8. Preview Generator (Draft + Visual Card)
 app.post('/api/generate-preview', async (req, res) => {
   const { topic, language } = req.body;
   try {
     const config = loadConfig();
+    const profile = config.profile || {};
+    const targetLang = language || config.automation?.nextLanguage || 'EN';
     const draft = await generatePostWithAI({
       topic: topic || 'Database Connection Pooling vs Horizontal Scaling',
-      language: language || 'EN',
-      level: config.profile?.yearsOfExperience || 'Mid'
+      language: targetLang,
+      level: profile.yearsOfExperience || 'Mid'
     });
+
+    // Generate real visual card for preview
+    const cardData = draft.visualCard || {};
+    const cardBuffer = await generateVisualCard({
+      type: cardData.type || 'takeaways',
+      title: cardData.title || draft.topic,
+      codeSnippet: cardData.codeSnippet || '',
+      language: cardData.language || 'typescript',
+      takeaways: cardData.takeaways || [],
+      authorName: profile.name || 'Software Engineer',
+      authorRole: profile.currentRole || 'Backend & Fullstack',
+      isArabic: targetLang === 'AR'
+    });
+
+    const uploadRes = await uploadImageToCloudinary(cardBuffer, `preview_${Date.now()}`);
+    draft.mediaUrl = uploadRes.secure_url || uploadRes.url;
+    draft.cardType = cardData.type || 'takeaways';
+
     res.json({ success: true, draft });
   } catch (error) {
     res.status(500).json({ error: error.message });
