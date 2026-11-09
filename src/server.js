@@ -41,8 +41,13 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Serve static frontend assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static frontend assets (built React app from frontend/dist if available, else public)
+const distPath = path.join(rootDir, 'frontend', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+} else {
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // 1. System Status
 app.get('/api/status', (req, res) => {
@@ -410,20 +415,22 @@ app.get('/api/auth/linkedin/url', (req, res) => {
 
 app.get('/api/auth/linkedin/callback', async (req, res) => {
   const { code, error, error_description } = req.query;
+  const currentEnv = loadEnv();
+  const appUrl = currentEnv.APP_URL || 'http://localhost:3000';
 
   if (error) {
-    return res.redirect(`/?auth_error=${encodeURIComponent(error_description || error)}`);
+    return res.redirect(`${appUrl}/?auth_error=${encodeURIComponent(error_description || error)}`);
   }
 
   if (!code) {
-    return res.redirect('/?auth_error=No+authorization+code+received');
+    return res.redirect(`${appUrl}/?auth_error=No+authorization+code+received`);
   }
 
   try {
     const authResult = await exchangeOAuthCode(code);
-    res.redirect(`/?auth_success=true&member=${encodeURIComponent(authResult.memberName || 'User')}`);
+    res.redirect(`${appUrl}/?auth_success=true&member=${encodeURIComponent(authResult.memberName || 'User')}`);
   } catch (err) {
-    res.redirect(`/?auth_error=${encodeURIComponent(err.message)}`);
+    res.redirect(`${appUrl}/?auth_error=${encodeURIComponent(err.message)}`);
   }
 });
 

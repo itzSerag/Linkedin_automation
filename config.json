@@ -17,7 +17,7 @@
   },
   "automation": {
     "enabled": false,
-    "cronSchedule": "0 10 * * *",
+    "cronSchedule": "45 8 * * *",
     "timezone": "Africa/Cairo",
     "languageMode": "alternate",
     "nextLanguage": "AR",

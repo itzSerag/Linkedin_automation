@@ -202,11 +202,11 @@ async function fetchConfig() {
     // Automation
     const auto = data.config.automation || {};
     document.getElementById('setAutoSchedule').value = String(auto.enabled ?? false);
-    document.getElementById('setCronSchedule').value = auto.cronSchedule || '0 10 * * *';
+    document.getElementById('setCronSchedule').value = auto.cronSchedule || '45 8 * * *';
     document.getElementById('setLangMode').value = auto.languageMode || 'alternate';
     document.getElementById('setAutoFirstComment').value = String(auto.autoPostFirstComment ?? true);
 
-    document.getElementById('statSchedule').innerText = auto.enabled ? `Cron: ${auto.cronSchedule}` : 'Manual Trigger Only';
+    document.getElementById('statSchedule').innerText = auto.enabled ? `Cron: ${auto.cronSchedule}` : '08:45 AM Cairo (Manual / Cron)';
     document.getElementById('statTimezone').innerText = `Timezone: ${auto.timezone || 'Africa/Cairo'}`;
 
     // Update LinkedIn Connect URL
