@@ -99,7 +99,7 @@ export default function PostPreviewModal({
                   <img
                     src={draft.mediaUrl}
                     alt="Visual Card Preview"
-                    className="w-full h-auto rounded-xl border border-slate-800 shadow-md object-cover max-h-56"
+                    className="w-full h-auto rounded-xl border border-slate-800 shadow-md object-contain bg-slate-950 max-h-80"
                   />
                 </div>
               )}

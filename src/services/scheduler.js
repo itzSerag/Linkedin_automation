@@ -70,12 +70,15 @@ export async function executePostPipeline({
   const cardData = draft.visualCard || {};
   const cardBuffer = await generateVisualCard({
     type: cardData.type || 'takeaways',
+    theme: cardData.theme || null,
     title: cardData.title || topic,
+    subtitle: cardData.subtitle || '',
     codeSnippet: cardData.codeSnippet || '',
     language: cardData.language || 'typescript',
     takeaways: cardData.takeaways || [],
-    authorName: profile.name || 'Software Engineer',
-    authorRole: profile.currentRole || 'Backend & Fullstack',
+    comparison: cardData.comparison || null,
+    authorName: profile.name || 'Serag',
+    authorRole: profile.currentRole || 'Backend & Fullstack Software Engineer',
     isArabic: targetLang === 'AR'
   });
 

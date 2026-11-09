@@ -4,7 +4,7 @@
   "description": "LinkedIn Automation & Personal Branding Studio",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"node src/server.js\" \"npm run dev --prefix frontend\"",
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"node --watch src/server.js\" \"npm run dev --prefix frontend\"",
     "server": "node src/server.js",
     "client": "npm run dev --prefix frontend",
     "build": "npm run build --prefix frontend",

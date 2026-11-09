@@ -78,7 +78,7 @@ HUMAN WRITING PRINCIPLES:
 5. ${endingRule}
 6. HASHTAGS: Exactly 2 or 3 relevant hashtags at the very bottom (e.g., #softwareengineering #backend #systemdesign).
 7. ${commentRule}
-8. VISUAL CARD SPEC: Provide data for a visual technical card to accompany the post (either a code snippet or 3 key takeaway bullet points).
+8. VISUAL CARD SPEC: Provide data for a modern technical visual card. Pick the best format for the topic: 'code' (if showing a real 6-8 line snippet), 'benchmark' (if comparing Before/Bottleneck vs After/Optimized), or 'takeaways' (3 high-impact architectural principles). All visualCard text, titles, snippets, and takeaways MUST be in English Latin letters even if the post body is Arabic.
 
 REFERENCE INSPIRATION POSTS:
 ${inspiration || 'No past inspiration posts provided.'}
@@ -100,11 +100,24 @@ You MUST respond strictly in valid JSON matching this schema:
   "firstCommentText": "The first comment text (empty string if no link requested)",
   "charCount": 1100,
   "visualCard": {
-    "type": "code" or "takeaways",
-    "title": "Short punchy card title (max 5 words)",
+    "type": "code" or "takeaways" or "benchmark",
+    "theme": "indigo" or "emerald" or "violet" or "amber" or "cyan",
+    "title": "Short punchy card title (max 5 words, in English)",
+    "subtitle": "Short punchy subtitle or core question (max 8 words, in English)",
     "language": "typescript / sql / bash / javascript",
     "codeSnippet": "6-10 lines of realistic code snippet (if type is code, else empty string)",
-    "takeaways": ["Takeaway 1 (max 8 words)", "Takeaway 2 (max 8 words)", "Takeaway 3 (max 8 words)"]
+    "takeaways": [
+      { "tag": "ROOT CAUSE", "text": "Core insight (max 8 words)", "detail": "Context or impact (max 10 words)" },
+      { "tag": "SYSTEM FIX", "text": "Core insight (max 8 words)", "detail": "Context or impact (max 10 words)" },
+      { "tag": "GOLDEN RULE", "text": "Core insight (max 8 words)", "detail": "Context or impact (max 10 words)" }
+    ],
+    "comparison": {
+      "beforeLabel": "Naive / Bottleneck",
+      "beforeText": "Sequential Full Table Scan blocking event loop threads",
+      "afterLabel": "Optimized Architecture",
+      "afterText": "Composite B-Tree Index with constant memory consumption",
+      "metric": "99.4% Latency Reduction (1,450ms -> 4ms)"
+    }
   }
 }
 `;
