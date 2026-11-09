@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { loadEnv, updateEnv } from '../config.js';
 
-const LINKEDIN_API_VERSION = '202401';
+const LINKEDIN_API_VERSION = '202511';
 
 export function getLinkedInAuthUrl() {
   const env = loadEnv();
@@ -142,6 +142,7 @@ export async function publishLinkedInPost({ text, imageBuffer, firstCommentText 
   if (imageUrn) {
     postPayload.content = {
       media: {
+        title: 'Engineering Technical Visual Card',
         id: imageUrn
       }
     };
@@ -174,7 +175,15 @@ export async function publishLinkedInPost({ text, imageBuffer, firstCommentText 
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
             shareCommentary: { text },
-            shareMediaCategory: 'NONE'
+            shareMediaCategory: imageUrn ? 'IMAGE' : 'NONE',
+            media: imageUrn ? [
+              {
+                status: 'READY',
+                description: { text: 'Technical Visual Card' },
+                media: imageUrn,
+                title: { text: 'Engineering Architecture Card' }
+              }
+            ] : []
           }
         },
         visibility: {
