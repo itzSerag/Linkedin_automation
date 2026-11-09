@@ -466,6 +466,22 @@ function setupEventListeners() {
     }
   });
 
+  document.getElementById('btnAutoDetectTg')?.addEventListener('click', async () => {
+    showToast('Checking for messages in @Linkedin_Antigravity_bot...', 'info');
+    try {
+      const res = await fetch('/api/telegram/auto-detect');
+      const data = await res.json();
+      if (data.found) {
+        document.getElementById('setTgChatId').value = data.chatId;
+        showToast(`🎉 Detected Chat ID for ${data.senderName}! Click "Save All Settings".`, 'success');
+      } else {
+        showToast(`ℹ️ ${data.message}`, 'info');
+      }
+    } catch (e) {
+      showToast('❌ Failed to auto-detect chat ID', 'error');
+    }
+  });
+
   // CSV Importer Toggle & Processing
   document.getElementById('btnToggleCsv').addEventListener('click', () => {
     const box = document.getElementById('csvImportContainer');

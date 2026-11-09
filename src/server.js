@@ -333,6 +333,42 @@ app.post('/api/test/telegram', async (req, res) => {
   res.json(result);
 });
 
+// Auto-detect Telegram Chat ID from latest message
+app.get('/api/telegram/auto-detect', async (req, res) => {
+  const currentEnv = loadEnv();
+  const token = currentEnv.TELEGRAM_BOT_TOKEN;
+  if (!token) return res.status(400).json({ error: 'Bot token not set' });
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+    const data = await response.json();
+    if (!data.ok || !data.result || data.result.length === 0) {
+      return res.json({
+        found: false,
+        message: 'No messages received yet. Please open your bot in Telegram (t.me/Linkedin_Antigravity_bot) and tap Start!'
+      });
+    }
+
+    const lastUpdate = data.result[data.result.length - 1];
+    const chatId = lastUpdate.message?.chat?.id || lastUpdate.callback_query?.message?.chat?.id;
+    const senderName = lastUpdate.message?.from?.first_name || 'User';
+
+    if (chatId) {
+      updateEnv({ TELEGRAM_CHAT_ID: String(chatId) });
+      return res.json({
+        found: true,
+        chatId: String(chatId),
+        senderName,
+        message: `Found chat ID for ${senderName}! Saved to .env.`
+      });
+    }
+
+    res.json({ found: false, message: 'Could not extract chat ID from update.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 7. Manual Pipeline Trigger
 app.post('/api/run-now', async (req, res) => {
   const { topic, language, forcePublish } = req.body;
