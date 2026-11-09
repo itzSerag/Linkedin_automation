@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
   loadConfig,
@@ -10,14 +11,20 @@ import {
   loadIdeas,
   saveIdeas,
   loadPosts,
-  savePosts
+  savePosts,
+  loadInspiration,
+  rootDir
 } from './config.js';
 import {
   getLinkedInAuthUrl,
   exchangeOAuthCode,
   getLinkedInStatus
 } from './services/linkedin.js';
-import { testGeminiConnection, generatePostWithGemini } from './services/gemini.js';
+import {
+  testGeminiConnection,
+  testOpenAIConnection,
+  generatePostWithAI
+} from './services/gemini.js';
 import { testCloudinaryConnection } from './services/cloudinary.js';
 import { testTelegramConnection } from './services/telegram.js';
 import { executePostPipeline, initScheduler } from './services/scheduler.js';
@@ -25,15 +32,14 @@ import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '..');
 
 const app = express();
 const env = loadEnv();
 const PORT = env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Serve static frontend assets
 app.use(express.static(path.join(__dirname, 'public')));
@@ -48,8 +54,12 @@ app.get('/api/status', (req, res) => {
 
   res.json({
     linkedin: linkedinStatus,
-    gemini: {
-      isConfigured: Boolean(currentEnv.GEMINI_API_KEY)
+    ai: {
+      provider: config.ai?.provider || 'gemini',
+      geminiModel: config.ai?.geminiModel || 'gemini-2.5-pro',
+      openaiModel: config.ai?.openaiModel || 'gpt-4o',
+      isGeminiConfigured: Boolean(currentEnv.GEMINI_API_KEY),
+      isOpenAIConfigured: Boolean(currentEnv.OPENAI_API_KEY)
     },
     cloudinary: {
       isConfigured: Boolean(currentEnv.CLOUDINARY_CLOUD_NAME && currentEnv.CLOUDINARY_API_KEY && currentEnv.CLOUDINARY_API_SECRET),
@@ -80,6 +90,7 @@ app.get('/api/config', (req, res) => {
       LINKEDIN_CLIENT_ID: currentEnv.LINKEDIN_CLIENT_ID,
       LINKEDIN_REDIRECT_URI: currentEnv.LINKEDIN_REDIRECT_URI,
       GEMINI_API_KEY: currentEnv.GEMINI_API_KEY ? '••••••••' + currentEnv.GEMINI_API_KEY.slice(-4) : '',
+      OPENAI_API_KEY: currentEnv.OPENAI_API_KEY ? '••••••••' + currentEnv.OPENAI_API_KEY.slice(-4) : '',
       CLOUDINARY_CLOUD_NAME: currentEnv.CLOUDINARY_CLOUD_NAME,
       CLOUDINARY_API_KEY: currentEnv.CLOUDINARY_API_KEY ? '••••••••' + currentEnv.CLOUDINARY_API_KEY.slice(-4) : '',
       TELEGRAM_BOT_TOKEN: currentEnv.TELEGRAM_BOT_TOKEN ? '••••••••' + currentEnv.TELEGRAM_BOT_TOKEN.slice(-4) : '',
@@ -89,10 +100,11 @@ app.get('/api/config', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  const { profile, automation, style, envUpdates } = req.body;
+  const { profile, ai, automation, style, envUpdates } = req.body;
   const currentConfig = loadConfig();
 
   if (profile) currentConfig.profile = { ...currentConfig.profile, ...profile };
+  if (ai) currentConfig.ai = { ...currentConfig.ai, ...ai };
   if (automation) currentConfig.automation = { ...currentConfig.automation, ...automation };
   if (style) currentConfig.style = { ...currentConfig.style, ...style };
 
@@ -154,12 +166,11 @@ app.post('/api/ideas/ai-generate', async (req, res) => {
   const config = loadConfig();
   const profile = config.profile || {};
 
-  if (!currentEnv.GEMINI_API_KEY) {
-    return res.status(400).json({ error: 'Please set your GEMINI_API_KEY in Settings first.' });
+  if (!currentEnv.GEMINI_API_KEY && !currentEnv.OPENAI_API_KEY) {
+    return res.status(400).json({ error: 'Please set your Gemini or OpenAI API Key in Settings first.' });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: currentEnv.GEMINI_API_KEY });
     const prompt = `
 Generate 5 viral, highly technical post topic ideas for a ${profile.currentRole || 'Backend/Fullstack'} engineer with stack: ${profile.primaryTechStack || 'Node, PostgreSQL, Docker'}.
 Include a mix of:
@@ -167,7 +178,7 @@ Include a mix of:
 - 3 topics in English
 Each topic must be specific, counter-intuitive or architecture/performance focused (no generic beginner fluff).
 
-Return JSON array of objects:
+Return strictly JSON array:
 [
   {
     "topic": "...",
@@ -178,15 +189,29 @@ Return JSON array of objects:
 ]
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: { responseMimeType: 'application/json' }
-    });
+    let generated = [];
+    if (config.ai?.provider === 'openai' && currentEnv.OPENAI_API_KEY) {
+      const { OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: currentEnv.OPENAI_API_KEY });
+      const comp = await openai.chat.completions.create({
+        model: config.ai?.openaiModel || 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' }
+      });
+      const parsed = JSON.parse(comp.choices[0].message.content.trim());
+      generated = Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
+    } else {
+      const ai = new GoogleGenAI({ apiKey: currentEnv.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: config.ai?.geminiModel || 'gemini-2.5-pro',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      const parsed = JSON.parse(response.text.trim());
+      generated = Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
+    }
 
-    const generated = JSON.parse(response.text.trim());
     const ideas = loadIdeas();
-
     const formatted = generated.map((item, idx) => ({
       id: `idea-ai-${Date.now()}-${idx}`,
       topic: item.topic,
@@ -230,9 +255,71 @@ app.post('/api/posts/:id/metrics', (req, res) => {
   res.json({ success: true, post });
 });
 
-// 5. Test Connections
+// 5. CSV Historical Posts Importer
+app.post('/api/posts/import-csv', (req, res) => {
+  const { csvContent } = req.body;
+  if (!csvContent) return res.status(400).json({ error: 'CSV content is required' });
+
+  try {
+    const lines = csvContent.split('\n');
+    if (lines.length < 2) return res.status(400).json({ error: 'Invalid CSV data' });
+
+    // Simple robust CSV line parser
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    const importedPosts = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // Match comma separated or quoted values
+      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+      const row = matches.map(m => m.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+
+      const postText = row[0] || '';
+      if (postText.length > 80) {
+        importedPosts.push({
+          text: postText,
+          likes: Number(row[1]) || 0,
+          comments: Number(row[2]) || 0
+        });
+      }
+    }
+
+    if (importedPosts.length === 0) {
+      return res.status(400).json({ error: 'No valid post texts found in CSV' });
+    }
+
+    // Sort by engagement or pick top 5
+    const topPosts = importedPosts.slice(0, 5);
+    const inspirationPath = path.join(rootDir, 'data', 'inspiration.md');
+    let currentInspiration = loadInspiration();
+
+    currentInspiration += `\n\n## Imported High-Performing Posts (${new Date().toLocaleDateString()})\n`;
+    topPosts.forEach((tp, idx) => {
+      currentInspiration += `\n### Reference Post #${idx + 1}\n${tp.text}\n---\n`;
+    });
+
+    fs.writeFileSync(inspirationPath, currentInspiration, 'utf-8');
+
+    res.json({
+      success: true,
+      message: `Imported and trained on top ${topPosts.length} posts!`,
+      count: topPosts.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to parse CSV: ' + err.message });
+  }
+});
+
+// 6. Test Connections
 app.post('/api/test/gemini', async (req, res) => {
   const result = await testGeminiConnection();
+  res.json(result);
+});
+
+app.post('/api/test/openai', async (req, res) => {
+  const result = await testOpenAIConnection();
   res.json(result);
 });
 
@@ -246,7 +333,7 @@ app.post('/api/test/telegram', async (req, res) => {
   res.json(result);
 });
 
-// 6. Manual Pipeline Trigger
+// 7. Manual Pipeline Trigger
 app.post('/api/run-now', async (req, res) => {
   const { topic, language, forcePublish } = req.body;
   try {
@@ -263,12 +350,12 @@ app.post('/api/run-now', async (req, res) => {
   }
 });
 
-// 7. Preview Generator (Draft only)
+// 8. Preview Generator (Draft only)
 app.post('/api/generate-preview', async (req, res) => {
   const { topic, language } = req.body;
   try {
     const config = loadConfig();
-    const draft = await generatePostWithGemini({
+    const draft = await generatePostWithAI({
       topic: topic || 'Database Connection Pooling vs Horizontal Scaling',
       language: language || 'EN',
       level: config.profile?.yearsOfExperience || 'Mid'
@@ -279,7 +366,7 @@ app.post('/api/generate-preview', async (req, res) => {
   }
 });
 
-// 8. LinkedIn OAuth Endpoints
+// 9. LinkedIn OAuth Endpoints
 app.get('/api/auth/linkedin/url', (req, res) => {
   const url = getLinkedInAuthUrl();
   res.json({ url });

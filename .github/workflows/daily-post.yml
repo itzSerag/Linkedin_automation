@@ -1,0 +1,52 @@
+name: Daily LinkedIn Post Pipeline
+
+on:
+  schedule:
+    # Runs at 08:00 UTC every day (which is 10:00 AM Africa/Cairo local time)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI / Mobile app
+
+jobs:
+  publish-daily-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit back updated posts.json & ideas.json
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run LinkedIn Posting Pipeline
+        env:
+          PORT: 3000
+          APP_URL: ${{ secrets.APP_URL || 'https://linkedin.com' }}
+          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+          LINKEDIN_REDIRECT_URI: ${{ secrets.LINKEDIN_REDIRECT_URI || 'http://localhost:3000/api/auth/linkedin/callback' }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_MEMBER_ID: ${{ secrets.LINKEDIN_MEMBER_ID }}
+          LINKEDIN_TOKEN_EXPIRY: ${{ secrets.LINKEDIN_TOKEN_EXPIRY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node src/scripts/cli-post.js
+
+      - name: Commit and Push Updated Post Logs & Ideas
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/posts.json data/ideas.json config.json
+          git diff --staged --quiet || (git commit -m "chore(automation): log daily published post and update idea status [skip ci]" && git push)

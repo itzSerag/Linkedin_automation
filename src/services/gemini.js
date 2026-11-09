@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import { loadEnv, loadConfig, loadInspiration, loadPosts } from '../config.js';
 
 function getGeminiClient() {
@@ -7,44 +8,52 @@ function getGeminiClient() {
   return new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 }
 
-export async function generatePostWithGemini({ topic, language = 'EN', level = 'Mid' }) {
-  const ai = getGeminiClient();
+function getOpenAIClient() {
+  const env = loadEnv();
+  if (!env.OPENAI_API_KEY) return null;
+  return new OpenAI({ apiKey: env.OPENAI_API_KEY });
+}
+
+export async function generatePostWithAI({ topic, language = 'EN', level = 'Mid' }) {
   const config = loadConfig();
+  const env = loadEnv();
   const inspiration = loadInspiration();
   const pastPosts = loadPosts().slice(-5);
-
   const profile = config.profile || {};
   const isArabic = language === 'AR';
 
+  const aiConfig = config.ai || { provider: 'gemini', geminiModel: 'gemini-2.5-pro', openaiModel: 'gpt-4o' };
+  const provider = aiConfig.provider || 'gemini';
+
   const systemInstruction = `
-You are an expert Ghostwriter and Senior Software Engineer creating high-engagement LinkedIn posts for a tech professional.
-The goal of each post is to attract Tech Recruiters, Engineering Managers, and Senior Engineers, establishing deep technical authority, architectural thinking, and high hireability.
+You are an elite Ghostwriter and Principal Software Engineer creating viral, high-credibility LinkedIn posts for a tech professional.
+The goal of each post is to command the attention of Tech Recruiters, Engineering Managers, and Staff Engineers, demonstrating deep technical maturity, architectural judgment, and hireability.
 
 AUTHOR PERSONA:
 - Name: ${profile.name || 'Software Engineer'}
 - Current Role: ${profile.currentRole || 'Backend & Fullstack Engineer'}
 - Years of Experience: ${profile.yearsOfExperience || 'Junior to Mid-Senior'}
-- Primary Tech Stack: ${profile.primaryTechStack || 'Node.js, PostgreSQL, Docker, Redis, Distributed Systems, Fullstack'}
-- Target Role: Software Engineer / Backend / Fullstack
+- Primary Tech Stack: ${profile.primaryTechStack || 'Node.js, PostgreSQL, Docker, Redis, Distributed Systems, Clean Architecture'}
+- Target Role: Backend / Fullstack Software Engineer
 - Portfolio / GitHub: ${profile.githubUrl || 'https://github.com'}
 
 WRITING RULES:
-1. LANGUAGE: Write completely in ${isArabic ? 'Egyptian/Modern Standard Arabic (smooth Arabic with technical English terms in Latin letters like Database, Query, Redis, Cache, Async/Await)' : 'Clear, crisp American English'}. DO NOT mix languages awkwardly.
-2. HOOK: The first 1-2 lines MUST be an irresistible hook (a counter-intuitive observation, a common mistake, or a real engineering battle-tested lesson). NO generic greetings like "Hello network" or "Today I want to talk about...".
+1. LANGUAGE: Write completely in ${isArabic ? 'Egyptian/Modern Standard Arabic (fluent, natural Arabic with technical industry terms in English like Database, Index, Connection Pool, Cache, Redis, Concurrency, Docker)' : 'Crisp, authoritative American English'}. DO NOT awkwardly mix languages.
+2. HOOK: The first 1-2 lines MUST be an irresistible hook (a counter-intuitive insight, a common senior mistake, or a production battle scar). NEVER start with greetings like "Hello everyone" or "Today let's talk about...".
 3. PACING & FORMAT:
-   - Use double line breaks between short 1-3 line paragraphs.
-   - Use clean bullet points or numbered lists for readability.
-   - Length: Strictly between 850 and 1300 characters.
-4. TONE: Pragmatic, engineering-first, humble yet authoritative. Avoid corporate buzzwords, self-congratulatory brag, or generic AI fluff ("In the fast-paced world of technology...").
+   - Double line breaks between short, digestible paragraphs (1-3 lines max).
+   - Use clean numbered lists or bullet points.
+   - Post Length: Strictly between 900 and 1300 characters.
+4. TONE: Pragmatic, engineering-first, humble yet authoritative. Avoid corporate buzzwords, self-congratulatory fluff, or generic AI summaries.
 5. CALL TO ACTION: End with a specific thought-provoking technical question to trigger comments from senior developers.
 6. HASHTAGS: Exactly 2 or 3 relevant hashtags at the very bottom (e.g., #softwareengineering #backend #systemdesign).
-7. FIRST COMMENT: Generate a natural first comment that shares the author's GitHub / Portfolio / Project link with context so the main post has zero external links.
-8. VISUAL CARD SPEC: Provide data for a visual technical card to accompany the post (either code snippet or 3 key takeaway bullet points).
+7. FIRST COMMENT: A short, natural comment sharing the author's GitHub / Portfolio project link with context.
+8. VISUAL CARD SPEC: Provide data for a visual technical card to accompany the post (either a code snippet or 3 key takeaway bullet points).
 
 REFERENCE INSPIRATION POSTS:
 ${inspiration || 'No past inspiration posts provided.'}
 
-RECENT PAST POSTS FOR VOICE CONTINUITY:
+RECENT PAST POSTS FOR CONTINUITY:
 ${JSON.stringify(pastPosts.map(p => ({ topic: p.topic, hook: p.hook })), null, 2)}
 `;
 
@@ -70,14 +79,57 @@ You MUST respond strictly in valid JSON matching this schema:
 }
 `;
 
+  // Path A: OpenAI ChatGPT
+  if (provider === 'openai') {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      console.warn('[AI] OPENAI_API_KEY is missing. Using template fallback.');
+      return getFallbackDraft({ topic, language, level, profile });
+    }
+
+    try {
+      const model = aiConfig.openaiModel || 'gpt-4o';
+      console.log(`[AI] Generating post with OpenAI model: ${model}`);
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.7
+      });
+
+      const parsed = JSON.parse(completion.choices[0].message.content.trim());
+      return {
+        success: true,
+        ...parsed,
+        language,
+        topic,
+        modelUsed: `OpenAI ${model}`
+      };
+    } catch (error) {
+      console.error('OpenAI generation error:', error);
+      const fallback = getFallbackDraft({ topic, language, level, profile });
+      return {
+        ...fallback,
+        warning: `OpenAI API call failed: ${error.message}. Returned template preview.`
+      };
+    }
+  }
+
+  // Path B: Google Gemini
+  const ai = getGeminiClient();
   if (!ai) {
-    // Graceful fallback mock if API key isn't provided yet
+    console.warn('[AI] GEMINI_API_KEY is missing. Using template fallback.');
     return getFallbackDraft({ topic, language, level, profile });
   }
 
   try {
+    const model = aiConfig.geminiModel || 'gemini-2.5-pro';
+    console.log(`[AI] Generating post with Gemini model: ${model}`);
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model,
       contents: userPrompt,
       config: {
         systemInstruction,
@@ -90,11 +142,11 @@ You MUST respond strictly in valid JSON matching this schema:
       success: true,
       ...parsed,
       language,
-      topic
+      topic,
+      modelUsed: `Gemini ${model}`
     };
   } catch (error) {
     console.error('Gemini generation error:', error);
-    // Return fallback mock on error
     const fallback = getFallbackDraft({ topic, language, level, profile });
     return {
       ...fallback,
@@ -102,6 +154,9 @@ You MUST respond strictly in valid JSON matching this schema:
     };
   }
 }
+
+// Backward-compatible alias
+export const generatePostWithGemini = generatePostWithAI;
 
 function getFallbackDraft({ topic, language, level, profile }) {
   const isArabic = language === 'AR';
@@ -133,7 +188,7 @@ function getFallbackDraft({ topic, language, level, profile }) {
 إيه أغرب Performance Bug حليته وكان سببه استعلام بسيط في الـ DB؟
 
 #backend #softwareengineering #databases`,
-      firstCommentText: `لو حابب تشوف أمثلة عملية لمشاريع Backend و System Design بنيتها، تقدر تطلع على الـ GitHub بتاعي هنا: ${profile.githubUrl || 'https://github.com'}`,
+      firstCommentText: `لو حابب تشوف مشاريع عملية بنيتها في الـ Backend و System Design، تصفح الـ GitHub بتاعي هنا: ${profile.githubUrl || 'https://github.com'}`,
       charCount: 980,
       visualCard: {
         type: 'takeaways',
@@ -208,14 +263,37 @@ try {
 
 export async function testGeminiConnection() {
   const ai = getGeminiClient();
+  const config = loadConfig();
+  const model = config.ai?.geminiModel || 'gemini-2.5-pro';
   if (!ai) return { success: false, message: 'GEMINI_API_KEY is not set in .env' };
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model,
       contents: 'Ping test. Reply with: OK',
     });
-    return { success: true, message: 'Gemini connected successfully!', reply: response.text?.trim() };
+    return { success: true, message: `Connected to Gemini (${model})!`, reply: response.text?.trim() };
   } catch (error) {
     return { success: false, message: error.message || 'Gemini connection failed' };
+  }
+}
+
+export async function testOpenAIConnection() {
+  const openai = getOpenAIClient();
+  const config = loadConfig();
+  const model = config.ai?.openaiModel || 'gpt-4o';
+  if (!openai) return { success: false, message: 'OPENAI_API_KEY is not set in .env' };
+  try {
+    const completion = await openai.chat.completions.create({
+      model: model.startsWith('o') ? model : 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'Ping test. Reply with: OK' }],
+      max_tokens: 10
+    });
+    return {
+      success: true,
+      message: `Connected to OpenAI (${model})!`,
+      reply: completion.choices[0].message.content.trim()
+    };
+  } catch (error) {
+    return { success: false, message: error.message || 'OpenAI connection failed' };
   }
 }

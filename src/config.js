@@ -51,6 +51,7 @@ export function loadEnv() {
     LINKEDIN_MEMBER_ID: process.env.LINKEDIN_MEMBER_ID || '',
     LINKEDIN_TOKEN_EXPIRY: process.env.LINKEDIN_TOKEN_EXPIRY || '',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',

@@ -1,4 +1,4 @@
-// Client-side Application Logic for LinkedIn Automation Studio
+// Client-side Application Logic for LinkedIn Automation Studio (Multi-AI Support)
 
 let currentConfig = null;
 let currentStatus = null;
@@ -114,15 +114,18 @@ async function fetchStatus() {
       liBadge.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20';
     }
 
-    // Gemini
-    const gemText = document.getElementById('statusGeminiText');
-    const gemPill = document.getElementById('statusGeminiPill');
-    if (data.gemini.isConfigured) {
-      gemText.innerText = 'Active (Gemini 2.5)';
-      gemPill.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50';
+    // AI Engine Status
+    const aiText = document.getElementById('statusAiText');
+    const aiPill = document.getElementById('statusAiPill');
+    const ai = data.ai || {};
+    const isConfigured = ai.provider === 'openai' ? ai.isOpenAIConfigured : ai.isGeminiConfigured;
+    const modelName = ai.provider === 'openai' ? `ChatGPT (${ai.openaiModel})` : `Gemini (${ai.geminiModel})`;
+
+    aiText.innerText = modelName;
+    if (isConfigured) {
+      aiPill.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50';
     } else {
-      gemText.innerText = 'API Key Missing';
-      gemPill.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+      aiPill.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
     }
 
     // Cloudinary
@@ -178,11 +181,18 @@ async function fetchConfig() {
     document.getElementById('profPortfolio').value = prof.portfolioUrl || '';
     document.getElementById('profBio').value = prof.resumeBio || '';
 
-    // Populate Settings
+    // Populate AI Model Settings
+    const ai = data.config.ai || {};
+    document.getElementById('setAiProvider').value = ai.provider || 'gemini';
+    document.getElementById('setGeminiModel').value = ai.geminiModel || 'gemini-2.5-pro';
+    document.getElementById('setOpenaiModel').value = ai.openaiModel || 'gpt-4o';
+
+    // Populate Settings / Env
     const env = data.env || {};
     document.getElementById('setLinkedinClientId').value = env.LINKEDIN_CLIENT_ID || '';
     document.getElementById('setLinkedinRedirect').value = env.LINKEDIN_REDIRECT_URI || '';
     document.getElementById('setGeminiKey').value = env.GEMINI_API_KEY || '';
+    document.getElementById('setOpenaiKey').value = env.OPENAI_API_KEY || '';
     document.getElementById('setCloudName').value = env.CLOUDINARY_CLOUD_NAME || '';
     document.getElementById('setCloudKey').value = env.CLOUDINARY_API_KEY || '';
     document.getElementById('setCloudSecret').value = '';
@@ -270,7 +280,6 @@ async function fetchPosts() {
     posts.forEach((post, idx) => {
       totalImpressions += (post.metrics?.impressions || 0);
 
-      // Populate Full History Card
       const card = document.createElement('div');
       card.className = 'p-6 rounded-xl bg-dark-card border border-dark-border space-y-4';
       const langBadge = post.language === 'AR' ? '🇸🇦 Arabic' : '🇬🇧 English';
@@ -286,7 +295,6 @@ async function fetchPosts() {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Text Preview -->
           <div class="md:col-span-2 space-y-2">
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hook</p>
             <p class="text-sm font-bold text-white">"${post.hook || ''}"</p>
@@ -294,7 +302,6 @@ async function fetchPosts() {
             ${post.firstCommentText ? `<p class="text-xs text-slate-400 mt-2"><b>1st Comment:</b> <span class="italic text-slate-300">${post.firstCommentText}</span></p>` : ''}
           </div>
 
-          <!-- Media / Card Preview -->
           <div class="space-y-2">
             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Visual Card</p>
             ${post.mediaUrl ? `
@@ -304,7 +311,6 @@ async function fetchPosts() {
           </div>
         </div>
 
-        <!-- Metrics Recorder (Learning Loop) -->
         <div class="pt-3 border-t border-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-dark-base/40 p-3 rounded-lg">
           <div class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
             <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
@@ -325,7 +331,6 @@ async function fetchPosts() {
       `;
       container.appendChild(card);
 
-      // Mini list (first 3 posts)
       if (idx < 3) {
         const miniCard = document.createElement('div');
         miniCard.className = 'p-3 rounded-lg bg-dark-base border border-dark-border flex items-center justify-between gap-2';
@@ -376,8 +381,14 @@ function setupEventListeners() {
     }
   });
 
-  // Save Settings
+  // Save Settings & AI Models
   document.getElementById('btnSaveSettings').addEventListener('click', async () => {
+    const ai = {
+      provider: document.getElementById('setAiProvider').value,
+      geminiModel: document.getElementById('setGeminiModel').value,
+      openaiModel: document.getElementById('setOpenaiModel').value
+    };
+
     const automation = {
       enabled: document.getElementById('setAutoSchedule').value === 'true',
       cronSchedule: document.getElementById('setCronSchedule').value,
@@ -387,6 +398,7 @@ function setupEventListeners() {
 
     const envUpdates = {
       GEMINI_API_KEY: document.getElementById('setGeminiKey').value,
+      OPENAI_API_KEY: document.getElementById('setOpenaiKey').value,
       CLOUDINARY_CLOUD_NAME: document.getElementById('setCloudName').value,
       CLOUDINARY_API_KEY: document.getElementById('setCloudKey').value,
       CLOUDINARY_API_SECRET: document.getElementById('setCloudSecret').value,
@@ -398,10 +410,10 @@ function setupEventListeners() {
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ automation, envUpdates })
+        body: JSON.stringify({ ai, automation, envUpdates })
       });
       if (res.ok) {
-        showToast('✅ Settings updated and applied!', 'success');
+        showToast('✅ AI Models & Settings updated and applied!', 'success');
         await refreshAll();
       }
     } catch (e) {
@@ -415,9 +427,20 @@ function setupEventListeners() {
     const res = await fetch('/api/test/gemini', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast(`✅ Gemini connected! Reply: ${data.reply}`, 'success');
+      showToast(`✅ ${data.message} Reply: ${data.reply}`, 'success');
     } else {
-      showToast(`❌ Gemini Error: ${data.message}`, 'error');
+      showToast(`❌ Gemini: ${data.message}`, 'error');
+    }
+  });
+
+  document.getElementById('btnTestOpenAI').addEventListener('click', async () => {
+    showToast('Testing OpenAI API...', 'info');
+    const res = await fetch('/api/test/openai', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✅ ${data.message} Reply: ${data.reply}`, 'success');
+    } else {
+      showToast(`❌ OpenAI: ${data.message}`, 'error');
     }
   });
 
@@ -440,6 +463,36 @@ function setupEventListeners() {
       showToast('✅ Telegram ping delivered to your chat!', 'success');
     } else {
       showToast(`❌ Telegram: ${data.message}`, 'error');
+    }
+  });
+
+  // CSV Importer Toggle & Processing
+  document.getElementById('btnToggleCsv').addEventListener('click', () => {
+    const box = document.getElementById('csvImportContainer');
+    box.classList.toggle('hidden');
+  });
+
+  document.getElementById('btnProcessCsv').addEventListener('click', async () => {
+    const csvContent = document.getElementById('csvInputText').value.trim();
+    if (!csvContent) return showToast('Please paste your CSV content first', 'error');
+
+    showToast('Processing LinkedIn posts and training style...', 'info');
+    try {
+      const res = await fetch('/api/posts/import-csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csvContent })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`🎉 ${data.message}`, 'success');
+        document.getElementById('csvInputText').value = '';
+        document.getElementById('csvImportContainer').classList.add('hidden');
+      } else {
+        showToast(`❌ ${data.error}`, 'error');
+      }
+    } catch (e) {
+      showToast('❌ Failed to process CSV', 'error');
     }
   });
 
@@ -474,7 +527,7 @@ function setupEventListeners() {
 
   // AI Brainstorm 5 Ideas
   document.getElementById('btnAiIdeas').addEventListener('click', async () => {
-    showToast('✨ Gemini is brainstorming 5 architecture topics...', 'info');
+    showToast('✨ AI is brainstorming 5 architecture topics...', 'info');
     try {
       const res = await fetch('/api/ideas/ai-generate', { method: 'POST' });
       const data = await res.json();
@@ -503,9 +556,6 @@ function setupEventListeners() {
   });
 
   document.getElementById('btnPublishModal').addEventListener('click', async () => {
-    const text = document.getElementById('modalPostText').value;
-    const firstComment = document.getElementById('modalFirstComment').value;
-    
     showToast('🚀 Publishing to LinkedIn & notifying Telegram...', 'info');
     closeModal();
 
@@ -580,7 +630,6 @@ window.deleteIdea = async function(id) {
 };
 
 window.triggerDraftForIdea = function(encodedTopic, lang) {
-  const topic = decodeURIComponent(encodedTopic);
   openPreviewModal();
 };
 
