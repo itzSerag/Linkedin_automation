@@ -23,6 +23,76 @@ function hashString(str) {
 const FONT_SANS = `'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
 const FONT_MONO = `'JetBrains Mono', 'Cascadia Code', Consolas, monospace`;
 
+/**
+ * Clean word-wrapping helper for SVG text rendering
+ */
+function wrapText(text, maxCharsPerLine = 34, maxLines = 3) {
+  if (!text) return [];
+  const words = String(text).trim().split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+
+    if (candidate.length <= maxCharsPerLine) {
+      currentLine = candidate;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+
+      if (lines.length === maxLines - 1) {
+        // Last line: pack remaining words up to maxCharsPerLine
+        const remainingWords = words.slice(i);
+        let lastLine = '';
+        let overflow = false;
+        for (const remWord of remainingWords) {
+          const testLast = lastLine ? `${lastLine} ${remWord}` : remWord;
+          if (testLast.length <= maxCharsPerLine) {
+            lastLine = testLast;
+          } else {
+            overflow = true;
+            break;
+          }
+        }
+        if (overflow) {
+          lastLine = lastLine.slice(0, Math.max(10, maxCharsPerLine - 3)).trim() + '...';
+        }
+        lines.push(lastLine);
+        return lines;
+      }
+    }
+  }
+
+  if (currentLine && lines.length < maxLines) {
+    lines.push(currentLine);
+  }
+
+  return lines;
+}
+
+function renderWrappedText({
+  text,
+  x,
+  startY,
+  lineSpacing = 24,
+  maxCharsPerLine = 34,
+  maxLines = 2,
+  fill = '#F8FAFC',
+  fontSize = 18,
+  fontWeight = '700',
+  font = FONT_SANS
+}) {
+  const lines = wrapText(text, maxCharsPerLine, maxLines);
+  return lines.map((line, idx) => {
+    const y = startY + idx * lineSpacing;
+    return `<text x="${x}" y="${y}" fill="${fill}" font-family="${font}" font-weight="${fontWeight}" font-size="${fontSize}">${escapeXml(line)}</text>`;
+  }).join('\n');
+}
+
 const THEMES = {
   indigo: {
     name: 'indigo',
@@ -49,7 +119,7 @@ const THEMES = {
     accent2: '#14B8A6', // Teal
     glow1: '#065F46',
     glow2: '#047857',
-    badgeBg: 'rgba(16, 185, 129, 0.12)',
+    badgeBg: 'rgba(168, 85, 249, 0.12)',
     badgeBorder: '#059669',
     badgeText: '#34D399',
     categoryLabel: 'DATABASE PERFORMANCE'
@@ -167,9 +237,9 @@ export async function generateVisualCard({
   const categoryLabel = rawCat.replace(/WAR STORIES|& RESILIENCE/gi, 'ARCHITECTURE').trim().toUpperCase();
   const badgeWidth = Math.max(130, Math.min(260, categoryLabel.length * 8 + 36));
 
-  // Clean title & subtitle
-  const cleanTitle = (title || 'Scalable Backend Architecture').slice(0, 52);
-  const cleanSubtitle = (subtitle || 'Clean Architecture • Zero Downtime • High Throughput').slice(0, 75);
+  // Clean title & subtitle (safe boundaries)
+  const cleanTitle = (title || 'Scalable Backend Architecture').slice(0, 50);
+  const cleanSubtitle = (subtitle || 'Clean Architecture • Zero Downtime • High Throughput').slice(0, 72);
 
   let centerContentSvg = '';
 
@@ -204,7 +274,7 @@ export async function generateVisualCard({
     const codeLinesSvg = rawLines
       .map((line, idx) => {
         const y = startY + idx * lineSpacing;
-        const highlighted = highlightCodeLine(line.slice(0, 74));
+        const highlighted = highlightCodeLine(line.slice(0, 70));
         return `
           <text x="122" y="${y}" text-anchor="end" fill="#475569" font-family="${FONT_MONO}" font-size="14">${idx + 1}</text>
           <text x="145" y="${y}" font-family="${FONT_MONO}" font-size="15" xml:space="preserve">${highlighted}</text>
@@ -249,13 +319,44 @@ export async function generateVisualCard({
     `;
   } else if (effectiveType === 'benchmark' && comparison) {
     // ----------------------------------------------------
-    // LAYOUT 2: BENCHMARK / BEFORE VS AFTER BATTLE
+    // LAYOUT 2: BENCHMARK / BEFORE VS AFTER BATTLE (SAFE WORD-WRAPPED)
     // ----------------------------------------------------
-    const beforeLabel = comparison.beforeLabel || 'NAIVE / COMMON APPROACH';
-    const beforeText = (comparison.beforeText || 'Full Table Scan & High Memory Usage').slice(0, 90);
-    const afterLabel = comparison.afterLabel || 'OPTIMIZED ARCHITECTURE';
-    const afterText = (comparison.afterText || 'Composite Index & Zero Memory Spikes').slice(0, 90);
-    const metricText = (comparison.metric || '99.4% Latency Drop & O(1) Scalability').slice(0, 60);
+    const beforeLabel = (comparison.beforeLabel || 'NAIVE PATTERN').slice(0, 24);
+    const beforeText = comparison.beforeText || 'Full Table Scan & High Memory Usage';
+    const afterLabel = (comparison.afterLabel || 'OPTIMIZED ARCHITECTURE').slice(0, 24);
+    const afterText = comparison.afterText || 'Composite Index & Zero Memory Spikes';
+    const metricText = (comparison.metric || '99.4% Latency Drop & O(1) Scalability').slice(0, 68);
+
+    // Dynamic metrics
+    const beforeMetric = comparison.beforeMetric || (beforeText.toLowerCase().includes('connection') ? 'UNCAPPED' : '1,450 ms');
+    const beforeMetricDetail = comparison.beforeMetricDetail || 'High Resource Contention & Latency Spikes';
+    const afterMetric = comparison.afterMetric || (afterText.toLowerCase().includes('pool') || afterText.toLowerCase().includes('connection') ? 'BOUNDED POOL' : '4 ms');
+    const afterMetricDetail = comparison.afterMetricDetail || 'Sub-Millisecond Queuing & Stable Memory';
+
+    // Safely word-wrapped text blocks
+    const wrappedBeforeTextSvg = renderWrappedText({
+      text: beforeText,
+      x: 25,
+      startY: 96,
+      lineSpacing: 24,
+      maxCharsPerLine: 34,
+      maxLines: 2,
+      fill: '#F8FAFC',
+      fontSize: 18,
+      fontWeight: '700'
+    });
+
+    const wrappedAfterTextSvg = renderWrappedText({
+      text: afterText,
+      x: 25,
+      startY: 96,
+      lineSpacing: 24,
+      maxCharsPerLine: 34,
+      maxLines: 2,
+      fill: '#F8FAFC',
+      fontSize: 18,
+      fontWeight: '700'
+    });
 
     centerContentSvg = `
       <!-- Left Card: Before / Bottleneck -->
@@ -265,14 +366,14 @@ export async function generateVisualCard({
         <line x1="0" y1="42" x2="485" y2="42" stroke="#7F1D1D" stroke-width="1" />
         
         <circle cx="28" cy="21" r="5" fill="#EF4444" />
-        <text x="44" y="26" fill="#FCA5A5" font-family="${FONT_SANS}" font-weight="700" font-size="13" letter-spacing="1">❌ ${escapeXml(beforeLabel.toUpperCase())}</text>
+        <text x="44" y="26" fill="#FCA5A5" font-family="${FONT_SANS}" font-weight="700" font-size="12" letter-spacing="1">❌ ${escapeXml(beforeLabel.toUpperCase())}</text>
         
-        <text x="25" y="80" fill="#94A3B8" font-family="${FONT_SANS}" font-weight="500" font-size="14">THE BOTTLENECK:</text>
-        <text x="25" y="112" fill="#F8FAFC" font-family="${FONT_SANS}" font-weight="700" font-size="20">${escapeXml(beforeText)}</text>
+        <text x="25" y="70" fill="#94A3B8" font-family="${FONT_SANS}" font-weight="600" font-size="12" letter-spacing="1">THE BOTTLENECK:</text>
+        ${wrappedBeforeTextSvg}
         
-        <rect x="25" y="175" width="435" height="85" rx="12" fill="#1F1317" stroke="#991B1B" stroke-width="1" />
-        <text x="45" y="210" fill="#EF4444" font-family="${FONT_MONO}" font-weight="800" font-size="28">1,450 ms</text>
-        <text x="45" y="238" fill="#F87171" font-family="${FONT_SANS}" font-size="13">Full Table Scan • Thread Contention</text>
+        <rect x="25" y="160" width="435" height="100" rx="12" fill="#1F1317" stroke="#991B1B" stroke-width="1" />
+        <text x="45" y="202" fill="#EF4444" font-family="${FONT_MONO}" font-weight="800" font-size="24">${escapeXml(beforeMetric)}</text>
+        <text x="45" y="234" fill="#F87171" font-family="${FONT_SANS}" font-size="13">${escapeXml(beforeMetricDetail)}</text>
       </g>
 
       <!-- Right Card: After / Solution -->
@@ -282,14 +383,14 @@ export async function generateVisualCard({
         <line x1="0" y1="42" x2="485" y2="42" stroke="#065F46" stroke-width="1" />
         
         <circle cx="28" cy="21" r="5" fill="#10B981" />
-        <text x="44" y="26" fill="#6EE7B7" font-family="${FONT_SANS}" font-weight="700" font-size="13" letter-spacing="1">⚡ ${escapeXml(afterLabel.toUpperCase())}</text>
+        <text x="44" y="26" fill="#6EE7B7" font-family="${FONT_SANS}" font-weight="700" font-size="12" letter-spacing="1">⚡ ${escapeXml(afterLabel.toUpperCase())}</text>
         
-        <text x="25" y="80" fill="#94A3B8" font-family="${FONT_SANS}" font-weight="500" font-size="14">ENGINEERING SOLUTION:</text>
-        <text x="25" y="112" fill="#F8FAFC" font-family="${FONT_SANS}" font-weight="700" font-size="20">${escapeXml(afterText)}</text>
+        <text x="25" y="70" fill="#94A3B8" font-family="${FONT_SANS}" font-weight="600" font-size="12" letter-spacing="1">ENGINEERING SOLUTION:</text>
+        ${wrappedAfterTextSvg}
         
-        <rect x="25" y="175" width="435" height="85" rx="12" fill="#0C251C" stroke="#059669" stroke-width="1" />
-        <text x="45" y="210" fill="#10B981" font-family="${FONT_MONO}" font-weight="800" font-size="28">4 ms</text>
-        <text x="45" y="238" fill="#34D399" font-family="${FONT_SANS}" font-size="13">B-Tree Index • Constant Memory O(1)</text>
+        <rect x="25" y="160" width="435" height="100" rx="12" fill="#0C251C" stroke="#059669" stroke-width="1" />
+        <text x="45" y="202" fill="#10B981" font-family="${FONT_MONO}" font-weight="800" font-size="24">${escapeXml(afterMetric)}</text>
+        <text x="45" y="234" fill="#34D399" font-family="${FONT_SANS}" font-size="13">${escapeXml(afterMetricDetail)}</text>
       </g>
 
       <!-- Bottom Impact Ribbon -->
@@ -297,13 +398,13 @@ export async function generateVisualCard({
         <rect width="1060" height="68" rx="14" fill="#0F172A" stroke="url(#accentGrad)" stroke-width="1.8" />
         <circle cx="45" cy="34" r="16" fill="url(#accentGrad)" />
         <text x="45" y="40" text-anchor="middle" fill="#FFFFFF" font-family="${FONT_SANS}" font-weight="800" font-size="18">🚀</text>
-        <text x="80" y="32" fill="${activeTheme.accent1}" font-family="${FONT_SANS}" font-weight="700" font-size="13" letter-spacing="1.2">SYSTEM PERFORMANCE RESULT</text>
-        <text x="80" y="52" fill="#FFFFFF" font-family="${FONT_SANS}" font-weight="800" font-size="18">${escapeXml(metricText)}</text>
+        <text x="80" y="30" fill="${activeTheme.accent1}" font-family="${FONT_SANS}" font-weight="700" font-size="12" letter-spacing="1.2">SYSTEM PERFORMANCE RESULT</text>
+        <text x="80" y="52" fill="#FFFFFF" font-family="${FONT_SANS}" font-weight="800" font-size="17">${escapeXml(metricText)}</text>
       </g>
     `;
   } else {
     // ----------------------------------------------------
-    // LAYOUT 3: SENIOR TAKEAWAYS & ARCHITECTURE (Linear Dark)
+    // LAYOUT 3: SENIOR TAKEAWAYS & ARCHITECTURE (SAFE BOUNDS)
     // ----------------------------------------------------
     const defaultItems = [
       { tag: 'ROOT CAUSE', text: 'Identify DB lock contention before horizontally scaling servers', detail: 'Avoid masking architectural bottlenecks behind expensive hardware' },
@@ -346,7 +447,7 @@ export async function generateVisualCard({
           <text x="175" y="39" text-anchor="middle" fill="${activeTheme.accent1}" font-family="${FONT_SANS}" font-weight="700" font-size="11" letter-spacing="1.2">${escapeXml(item.tag.toUpperCase())}</text>
 
           <!-- Core Insight -->
-          <text x="110" y="70" fill="#FFFFFF" font-family="${FONT_SANS}" font-weight="700" font-size="19">${escapeXml(item.text)}</text>
+          <text x="110" y="70" fill="#FFFFFF" font-family="${FONT_SANS}" font-weight="700" font-size="18">${escapeXml(item.text)}</text>
           <text x="110" y="94" fill="#94A3B8" font-family="${FONT_SANS}" font-weight="400" font-size="13">${escapeXml(item.detail)}</text>
 
           <!-- Right Arrow Accent -->
