@@ -1,0 +1,30 @@
+{
+  "name": "linkedin_automation",
+  "version": "1.0.0",
+  "description": "Automated LinkedIn Growth & Personal Branding Pipeline",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "keywords": [
+    "linkedin",
+    "automation",
+    "gemini",
+    "cloudinary",
+    "telegram"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^3.0.0",
+    "axios": "^1.21.0",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "node-cron": "^4.6.0",
+    "sharp": "^0.35.5"
+  }
+}

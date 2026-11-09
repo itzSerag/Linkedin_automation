@@ -1,0 +1,23 @@
+[
+  {
+    "id": "post_1794227669854",
+    "topic": "Race Conditions in PostgreSQL",
+    "language": "EN",
+    "hook": "Most junior developers think Redis is just for caching.",
+    "postText": "Most junior developers think Redis is just for caching.\n\nHere is how experienced backend engineers actually leverage it:\n\n1. Distributed Locks (Redlock)\nPreventing two background workers from charging the same credit card or modifying inventory simultaneously.\n\n2. Sliding Window Rate Limiting\nProtecting critical endpoints using atomic ZADD and ZREMRANGEBYSCORE.\n\n3. Ephemeral Idempotency Keys\nStoring deduplication tokens with a 120-second TTL to safely ignore duplicate network retries.\n\n4. Pub/Sub & Lightweight Task Buffers\nHandling high-throughput messaging before needing the operational overhead of Kafka.\n\nCaching key-value pairs is merely 10% of Redis's power.\nThe real superpower is atomic, in-memory concurrency primitives.\n\nWhat is your most non-standard use case for Redis in production?\n\n#backend #systemdesign #softwareengineering",
+    "firstCommentText": "Check out full architectural implementations and benchmarks on my GitHub: https://github.com",
+    "mediaUrl": "http://localhost:3000/media/post_1794227669851_1794227669853.png",
+    "isLocalMedia": true,
+    "cardType": "code",
+    "publishedToLinkedIn": false,
+    "postUrn": null,
+    "postUrl": "https://www.linkedin.com (Saved as Draft - Connect LinkedIn in Dashboard to publish live)",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-09T12:34:29.854Z"
+  }
+]

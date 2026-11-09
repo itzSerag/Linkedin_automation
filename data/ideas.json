@@ -1,0 +1,47 @@
+[
+  {
+    "id": "idea-1",
+    "topic": "Why indexing isn't just 'put an index on every foreign key' - the real cost of indexes in PostgreSQL",
+    "category": "Backend & Database",
+    "level": "Mid",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T14:00:00.000Z"
+  },
+  {
+    "id": "idea-2",
+    "topic": "الفرق الحقيقي بين الـ Horizontal Scaling والـ Vertical Scaling، وليه أغلب المشاكل في البداية بتتحل بكود أحسن مش بسيرفرات أكبر",
+    "category": "System Design & Architecture",
+    "level": "Junior/Mid",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-09T14:00:00.000Z"
+  },
+  {
+    "id": "idea-3",
+    "topic": "Connection Pooling in Node.js & PostgreSQL: The silent memory and socket bottleneck when traffic spikes",
+    "category": "Backend Performance",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T14:00:00.000Z"
+  },
+  {
+    "id": "idea-4",
+    "topic": "إزاي تتعامل مع الـ Race Conditions في الـ Database لما يكون عندك أكثر من request بيحاولوا يعدلوا نفس الـ Balance أو الـ Stock؟ (Pessimistic vs Optimistic Locking)",
+    "category": "Concurrency & Databases",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-09T14:00:00.000Z"
+  },
+  {
+    "id": "idea-5",
+    "topic": "Idempotency in REST APIs: Why network retries can duplicate payments or orders, and how to implement Idempotency-Key with Redis",
+    "category": "API Design",
+    "level": "Mid",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-09T14:00:00.000Z"
+  }
+]

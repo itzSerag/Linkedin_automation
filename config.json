@@ -1,0 +1,29 @@
+{
+  "profile": {
+    "name": "Software Engineer",
+    "headline": "Backend & Fullstack Engineer | Scalable Systems & Clean Architecture",
+    "currentRole": "Backend / Fullstack Software Engineer",
+    "yearsOfExperience": "Junior to Mid-Senior",
+    "primaryTechStack": "Backend (Node.js, Express, PostgreSQL, Redis, Docker, System Design) & Fullstack (React, REST APIs)",
+    "targetAudience": "Tech Recruiters, Engineering Managers, and Fellow Software Engineers",
+    "portfolioUrl": "https://github.com",
+    "githubUrl": "https://github.com",
+    "resumeBio": "Passionate backend and fullstack engineer focused on building robust, scalable web services, API architecture, distributed systems concepts, database performance optimization, and clean maintainable code. Seeking high-impact software engineering roles."
+  },
+  "automation": {
+    "enabled": false,
+    "cronSchedule": "0 10 * * *",
+    "timezone": "Africa/Cairo",
+    "languageMode": "alternate",
+    "nextLanguage": "AR",
+    "includeVisualCard": true,
+    "autoPostFirstComment": true,
+    "notifyTelegram": true
+  },
+  "style": {
+    "targetCharMin": 900,
+    "targetCharMax": 1300,
+    "maxHashtags": 3,
+    "tone": "Insightful, practical, engineering-first, humble yet authoritative, no corporate buzzword fluff"
+  }
+}

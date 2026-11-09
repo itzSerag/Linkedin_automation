@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Automation & Personal Branding Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            dark: {
+              base: '#0B0F17',
+              card: '#111827',
+              border: '#1F2937',
+              hover: '#1E293B',
+              muted: '#94A3B8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0F17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1F2937;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-dark-base text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-600 selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="border-b border-dark-border bg-dark-card/60 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            LinkedIn Automation Studio
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-semibold border border-blue-500/20">v2.0 Pro</span>
+          </h1>
+          <p class="text-xs text-slate-400">Engineering Growth & Recruiter Visibility</p>
+        </div>
+      </div>
+
+      <!-- Quick Action: Post Now -->
+      <div class="flex items-center gap-3">
+        <button id="btnQuickPost" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-all shadow-md shadow-blue-600/25 active:scale-95">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Generate & Post Now</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="border-b border-dark-border bg-dark-card/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex gap-2 py-2 overflow-x-auto text-sm" id="navTabs">
+        <button data-tab="tab-overview" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-blue-400 bg-blue-500/10 transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Overview
+        </button>
+        <button data-tab="tab-persona" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover transition">
+          <i data-lucide="user-check" class="w-4 h-4"></i> Persona & Resume
+        </button>
+        <button data-tab="tab-ideas" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover transition">
+          <i data-lucide="lightbulb" class="w-4 h-4"></i> Idea Bank
+          <span id="badgePendingIdeas" class="text-xs px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">0</span>
+        </button>
+        <button data-tab="tab-posts" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover transition">
+          <i data-lucide="history" class="w-4 h-4"></i> Posts & Analytics
+          <span id="badgePublishedPosts" class="text-xs px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">0</span>
+        </button>
+        <button data-tab="tab-settings" class="tab-btn px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-dark-hover transition">
+          <i data-lucide="settings" class="w-4 h-4"></i> Integrations & Auth
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- TAB 1: OVERVIEW -->
+    <div id="tab-overview" class="tab-pane space-y-6">
+      
+      <!-- Auth / System Connection Status Strip -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- LinkedIn Status -->
+        <div class="p-4 rounded-xl bg-dark-card border border-dark-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
+              <i data-lucide="linkedin" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">LinkedIn API</p>
+              <p id="statusLinkedinText" class="text-sm font-semibold text-slate-200">Checking...</p>
+            </div>
+          </div>
+          <span id="statusLinkedinPill" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+        </div>
+
+        <!-- Gemini Status -->
+        <div class="p-4 rounded-xl bg-dark-card border border-dark-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="bot" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Gemini 2.5 AI</p>
+              <p id="statusGeminiText" class="text-sm font-semibold text-slate-200">Checking...</p>
+            </div>
+          </div>
+          <span id="statusGeminiPill" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+        </div>
+
+        <!-- Cloudinary Status -->
+        <div class="p-4 rounded-xl bg-dark-card border border-dark-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+              <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Cloudinary CDN</p>
+              <p id="statusCloudinaryText" class="text-sm font-semibold text-slate-200">Checking...</p>
+            </div>
+          </div>
+          <span id="statusCloudinaryPill" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+        </div>
+
+        <!-- Telegram Status -->
+        <div class="p-4 rounded-xl bg-dark-card border border-dark-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-400">Telegram Bot</p>
+              <p id="statusTelegramText" class="text-sm font-semibold text-slate-200">Checking...</p>
+            </div>
+          </div>
+          <span id="statusTelegramPill" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+        </div>
+      </div>
+
+      <!-- Hero Callout & Quick Launch -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-blue-950/40 via-dark-card to-dark-card border border-blue-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Autonomous Daily Engine</span>
+            <span id="nextLanguageBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">Next Post: 🇬🇧 EN</span>
+          </div>
+          <h2 class="text-xl font-bold text-white">Daily Recruiter Visibility Pipeline</h2>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Posts 1 high-impact engineering post every day alternating between English and Arabic. Generates a dark-mode code/takeaway card, uploads to Cloudinary, adds your GitHub link in the first comment, and alerts you on Telegram.
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <button id="btnTriggerPreview" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-slate-200 text-sm font-medium transition flex items-center justify-center gap-2">
+            <i data-lucide="eye" class="w-4 h-4"></i> Preview Next Post
+          </button>
+          <button id="btnTriggerFullRun" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i> Publish Next Post
+          </button>
+        </div>
+      </div>
+
+      <!-- Schedule & Automation Status Card -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="p-5 rounded-xl bg-dark-card border border-dark-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cron Schedule</span>
+            <i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>
+          </div>
+          <div class="text-xl font-bold text-white" id="statSchedule">Daily at 10:00 AM</div>
+          <p class="text-xs text-slate-500" id="statTimezone">Timezone: Africa/Cairo</p>
+        </div>
+
+        <div class="p-5 rounded-xl bg-dark-card border border-dark-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Idea Bank</span>
+            <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="text-xl font-bold text-white" id="statIdeasCount">5 Ideas Available</div>
+          <p class="text-xs text-slate-500">Auto-picks next pending topic</p>
+        </div>
+
+        <div class="p-5 rounded-xl bg-dark-card border border-dark-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Reach Logged</span>
+            <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="text-xl font-bold text-white" id="statTotalImpressions">0 Impressions</div>
+          <p class="text-xs text-slate-500">Record impressions in Posts tab</p>
+        </div>
+      </div>
+
+      <!-- Recent Posts Mini List -->
+      <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-slate-400"></i> Latest Activity
+          </h3>
+          <button onclick="switchTab('tab-posts')" class="text-xs text-blue-400 hover:text-blue-300 font-medium">View All &rarr;</button>
+        </div>
+        <div id="miniPostsList" class="space-y-3">
+          <!-- Populated by JS -->
+          <p class="text-xs text-slate-500 italic">No posts published yet. Tap "Generate & Post Now" to test your first post!</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: PERSONA & RESUME -->
+    <div id="tab-persona" class="tab-pane hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Engineering Persona & Resume Context</h2>
+          <p class="text-xs text-slate-400">The AI uses this data to write with your exact voice, experience level, and stack.</p>
+        </div>
+        <button id="btnSavePersona" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> Save Persona
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Basic Info -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <h3 class="text-sm font-semibold text-slate-200 border-b border-dark-border pb-2">Profile Basics</h3>
+          
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Full Name / Display Name</label>
+            <input type="text" id="profName" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="e.g. John Doe">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">LinkedIn Headline</label>
+            <input type="text" id="profHeadline" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="e.g. Backend & Fullstack Engineer | Scalable Systems & Node.js">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Current Role / Target Role</label>
+            <input type="text" id="profRole" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="e.g. Backend / Fullstack Software Engineer">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Experience Level</label>
+            <select id="profExp" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+              <option value="Junior">Junior (0-2 years)</option>
+              <option value="Junior to Mid-Senior" selected>Junior to Mid-Senior (2-4 years)</option>
+              <option value="Mid-Senior">Mid-Senior (4-6 years)</option>
+              <option value="Senior / Lead">Senior / Lead (6+ years)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tech Stack & Links -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <h3 class="text-sm font-semibold text-slate-200 border-b border-dark-border pb-2">Technical Focus & Links</h3>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Primary Tech Stack & Concepts</label>
+            <textarea id="profStack" rows="3" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="e.g. Node.js, Express, PostgreSQL, Redis, Docker, System Design, REST APIs, React"></textarea>
+            <p class="text-xs text-slate-500 mt-1">Mention tools you want recruiters to notice you for.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">GitHub Profile URL (Posted in 1st comment)</label>
+            <input type="url" id="profGithub" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="https://github.com/yourusername">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Portfolio / Resume Website URL</label>
+            <input type="url" id="profPortfolio" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="https://yourportfolio.dev">
+          </div>
+        </div>
+
+        <!-- Resume / Bio Context -->
+        <div class="md:col-span-2 p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <h3 class="text-sm font-semibold text-slate-200 border-b border-dark-border pb-2">Resume & Career Narrative Bio</h3>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Detailed Technical Bio / Background</label>
+            <textarea id="profBio" rows="4" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="Paste your summary or notable projects, accomplishments, and technologies you've worked on..."></textarea>
+            <p class="text-xs text-slate-500 mt-1">Gemini will weave real-world scenarios and context into posts based on this background.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: IDEA BANK -->
+    <div id="tab-ideas" class="tab-pane hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white">Engineering Idea Bank</h2>
+          <p class="text-xs text-slate-400">Add daily thoughts or let Gemini brainstorm architecture topics for you.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btnAiIdeas" class="px-3.5 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 font-medium text-xs transition flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span>✨ AI Brainstorm 5 Ideas</span>
+          </button>
+          <button id="btnOpenAddIdea" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition flex items-center gap-2">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Add Idea</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Idea Form (Collapsible) -->
+      <div id="addIdeaCard" class="hidden p-5 rounded-xl bg-dark-card border border-blue-500/30 space-y-4">
+        <h3 class="text-sm font-bold text-white">Add New Topic to Pipeline</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">Topic / Core Insight</label>
+            <input type="text" id="newIdeaTopic" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500" placeholder="e.g. Why connection pooling matters in Node.js & PostgreSQL">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Language</label>
+            <select id="newIdeaLang" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+              <option value="EN">English 🇬🇧</option>
+              <option value="AR">Arabic 🇸🇦</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btnCancelAddIdea" class="px-3 py-1.5 rounded-lg bg-dark-hover text-slate-400 text-xs font-medium">Cancel</button>
+          <button id="btnSubmitAddIdea" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500">Save to Bank</button>
+        </div>
+      </div>
+
+      <!-- Ideas Filter & List -->
+      <div class="space-y-3" id="ideasList">
+        <!-- Loaded via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 4: POSTS & ANALYTICS -->
+    <div id="tab-posts" class="tab-pane hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Post History & Analytics Loop</h2>
+          <p class="text-xs text-slate-400">Review generated posts, media links, and log impressions to train your writing style.</p>
+        </div>
+      </div>
+
+      <div id="postsHistoryList" class="space-y-4">
+        <!-- Loaded via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 5: SETTINGS & INTEGRATIONS -->
+    <div id="tab-settings" class="tab-pane hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-white">Integrations & Automation Controls</h2>
+          <p class="text-xs text-slate-400">Configure LinkedIn API, Gemini, Cloudinary, Telegram, and scheduling.</p>
+        </div>
+        <button id="btnSaveSettings" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> Save All Settings
+        </button>
+      </div>
+
+      <div class="space-y-6">
+
+        <!-- LinkedIn OAuth Integration Card -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-600/10 text-blue-400 flex items-center justify-center font-bold">
+                <i data-lucide="linkedin" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-white">LinkedIn Official API Connection</h3>
+                <p class="text-xs text-slate-400">OAuth 2.0 with w_member_social scope for posting and media</p>
+              </div>
+            </div>
+            <span id="settingsLinkedinBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">Not Connected</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Client ID</label>
+              <input type="text" id="setLinkedinClientId" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" readonly>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Authorized Redirect URI</label>
+              <input type="text" id="setLinkedinRedirect" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" readonly>
+            </div>
+          </div>
+
+          <!-- Connect Button -->
+          <div class="pt-3 border-t border-dark-border flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="text-xs text-slate-400" id="linkedinTokenExpiryText">
+              Tokens last 60 days. Connect once to automatically store the access token.
+            </div>
+            <a id="btnConnectLinkedIn" href="#" target="_blank" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition flex items-center gap-2 shadow-lg shadow-blue-600/20">
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+              <span>Connect LinkedIn Account (1-Click)</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Gemini API Card -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="bot" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-white">Google Gemini 2.5 Flash API</h3>
+                <p class="text-xs text-slate-400">Generates both Arabic & English posts with tailored engineering voice</p>
+              </div>
+            </div>
+            <button id="btnTestGemini" class="px-3 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-800 border border-dark-border text-xs text-slate-300 font-medium transition flex items-center gap-1.5">
+              <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i> Test Gemini
+            </button>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Gemini API Key (Google AI Studio)</label>
+            <input type="password" id="setGeminiKey" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" placeholder="AIzaSy...">
+            <p class="text-xs text-slate-500 mt-1">Get your free key from <a href="https://aistudio.google.com/" target="_blank" class="text-blue-400 underline">aistudio.google.com</a>.</p>
+          </div>
+        </div>
+
+        <!-- Cloudinary CDN Card -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                <i data-lucide="cloud" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-white">Cloudinary Media Storage</h3>
+                <p class="text-xs text-slate-400">Hosts all generated visual cards and post media</p>
+              </div>
+            </div>
+            <button id="btnTestCloudinary" class="px-3 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-800 border border-dark-border text-xs text-slate-300 font-medium transition flex items-center gap-1.5">
+              <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i> Test Cloudinary
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Cloud Name</label>
+              <input type="text" id="setCloudName" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200" placeholder="e.g. demo-cloud">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">API Key</label>
+              <input type="text" id="setCloudKey" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" placeholder="API Key">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">API Secret</label>
+              <input type="password" id="setCloudSecret" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" placeholder="API Secret">
+            </div>
+          </div>
+          <p class="text-xs text-slate-500">Get free credentials at <a href="https://cloudinary.com/" target="_blank" class="text-blue-400 underline">cloudinary.com</a>. If left empty, local image storage is used as fallback.</p>
+        </div>
+
+        <!-- Telegram Notifications Card -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                <i data-lucide="send" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-bold text-white">Telegram Notifications</h3>
+                <p class="text-xs text-slate-400">Sends real-time post confirmation, live LinkedIn link, and media preview</p>
+              </div>
+            </div>
+            <button id="btnTestTelegram" class="px-3 py-1.5 rounded-lg bg-dark-hover hover:bg-slate-800 border border-dark-border text-xs text-slate-300 font-medium transition flex items-center gap-1.5">
+              <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i> Test Telegram
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Telegram Bot Token (from @BotFather)</label>
+              <input type="password" id="setTgToken" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" placeholder="123456789:ABCdef...">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Your Telegram Chat ID (from @userinfobot)</label>
+              <input type="text" id="setTgChatId" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" placeholder="e.g. 12345678">
+            </div>
+          </div>
+        </div>
+
+        <!-- Scheduling & Automation Controls -->
+        <div class="p-6 rounded-xl bg-dark-card border border-dark-border space-y-4">
+          <h3 class="text-base font-bold text-white border-b border-dark-border pb-2">Scheduler & Publishing Rules</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Auto-Schedule Status</label>
+              <select id="setAutoSchedule" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200">
+                <option value="false">Disabled (Manual Only)</option>
+                <option value="true">Enabled (Run automatically on Cron)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Cron Schedule (Daily Post Time)</label>
+              <input type="text" id="setCronSchedule" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200 font-mono" value="0 10 * * *">
+              <p class="text-xs text-slate-500 mt-1">Default: `0 10 * * *` (Every day at 10:00 AM)</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Language Alternation Mode</label>
+              <select id="setLangMode" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200">
+                <option value="alternate">Alternate Daily (AR &harr; EN)</option>
+                <option value="EN">Always English</option>
+                <option value="AR">Always Arabic</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Auto-Post First Comment</label>
+              <select id="setAutoFirstComment" class="w-full px-3 py-2 rounded-lg bg-dark-base border border-dark-border text-sm text-slate-200">
+                <option value="true">Yes (Post GitHub / Portfolio link in 1st comment)</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Preview / Quick Post -->
+  <div id="previewModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-dark-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-blue-400"></i>
+          <h3 class="text-base font-bold text-white" id="modalTitle">Post Preview</h3>
+        </div>
+        <button id="btnCloseModal" class="text-slate-400 hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
+        <div id="modalLoading" class="hidden py-12 flex flex-col items-center justify-center gap-3">
+          <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-slate-300 font-medium">Gemini is crafting your technical post...</p>
+        </div>
+
+        <div id="modalContent" class="space-y-4">
+          <!-- Topic & Meta -->
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-dark-border pb-2">
+            <span id="modalTopic" class="font-medium text-blue-400">Topic: Connection Pooling</span>
+            <span id="modalCharCount" class="font-mono">1,120 chars</span>
+          </div>
+
+          <!-- Post Text -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">LinkedIn Post Text:</label>
+            <textarea id="modalPostText" rows="10" class="w-full p-3 rounded-xl bg-dark-base border border-dark-border text-slate-200 text-sm leading-relaxed focus:outline-none font-sans"></textarea>
+          </div>
+
+          <!-- First Comment -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">First Comment (Portfolio / GitHub link):</label>
+            <input type="text" id="modalFirstComment" class="w-full p-2.5 rounded-lg bg-dark-base border border-dark-border text-slate-200 text-xs font-sans">
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-dark-border flex items-center justify-between bg-dark-base/50">
+        <button id="btnRegenerateModal" class="px-3.5 py-2 rounded-lg bg-dark-hover hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Regenerate
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button id="btnCopyModalText" class="px-3.5 py-2 rounded-lg bg-dark-hover hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Text
+          </button>
+          <button id="btnPublishModal" class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-blue-600/25">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> Publish Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
