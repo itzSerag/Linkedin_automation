@@ -2,9 +2,9 @@ name: Daily LinkedIn Post Pipeline
 
 on:
   schedule:
-    # Runs at 06:45 UTC every day (08:45 AM Africa/Cairo local time - Golden engagement window)
+    # Runs at 06:45 UTC daily (08:45 AM Africa/Cairo - Peak Morning Window)
     - cron: '45 6 * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub UI / Mobile app
+  workflow_dispatch:
 
 jobs:
   publish-daily-post:
