@@ -20,7 +20,7 @@
     "cronSchedule": "45 8 * * *",
     "timezone": "Africa/Cairo",
     "languageMode": "alternate",
-    "nextLanguage": "AR",
+    "nextLanguage": "EN",
     "includeVisualCard": true,
     "autoPostFirstComment": true,
     "notifyTelegram": true,

@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794300981514",
+    "topic": "مشكلة الـ Cache Stampede في Node.js & Redis: كيف تتسبب الـ Thundering Herd Problem في إسقاط قاعدة بيانات PostgreSQL وكيف تحلها باستراتيجية Probabilistic Early Expiration (XFetch)",
+    "language": "AR",
+    "hook": "أكبر كابوس يواجه الـ Backend Engineer مش الـ Cache Miss العادي، لكن لحظة الـ TTL Expiration لما يكون السيستم تحت High Traffic.",
+    "postText": "أكبر كابوس يواجه الـ Backend Engineer مش الـ Cache Miss العادي، لكن لحظة الـ TTL Expiration لما يكون السيستم تحت High Traffic.\n\nالمشكلة دي معروفة بـ Cache Stampede أو Thundering Herd Problem.\n\nتخيل عندك Hot Key عليه آلاف الـ Requests في الثانية في Redis. فجأة الـ TTL ينتهي:\n1. كل الـ Concurrent Requests بتشوف Cache Miss في نفس الميلي ثانية.\n2. مئات الـ Threads بتروح تضرب PostgreSQL بنفس الـ Expensive Query في نفس الوقت.\n3. الـ Connection Pool بيحصله Exhaustion فوري، والـ CPU بيوصل 100%، وبتبدأ السيرفرات تقع ورا بعضها (Cascade Failure).\n\nالحل التقليدي هو Mutex Locking، بس دا بيزود الـ Latency وبيعمل Bottleneck على الـ Threads.\n\nالحل الأذكى والأنظف معماريًا هو Probabilistic Early Expiration باستخدام XFetch Algorithm.\n\nالفكرة بسيطة: بدل ما تنتظر الـ Key يموت تمامًا، الـ Read Function بتحسب احتمالية عشوائية بناءً على وقت الـ Read وطول زمن الـ Recomputation. لو الـ Probabilistic Condition تحققت، Request واحد بس بيعمل Async Background Refresh للـ Redis، بينما باقي الـ Users بيستمروا في قراءة الـ Stale Data بالكامل وبأقل Latency ممكنة.\n\nالـ Cache مش مجرد Tool بتحط فيها البيانات، تصميم الـ Expiration Lifecycle هو الفاصل بين السيستم الصامد والسيستم اللي بيقع في أول Surge.\n\n#backend #systemdesign #redis",
+    "firstCommentText": "The XFetch algorithm paper ('Optimal Probabilistic Cache Expiration' by Vattani et al.) mathematically proves zero thundering herd without distributed locking overhead.",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794300976/linkedin_posts/post_1794300975821_1794300975822.png",
+    "isLocalMedia": false,
+    "cardType": "code",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7525843765576511488",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7525843765576511488/",
+    "firstCommentStatus": "failed: Not enough permissions to access: partnerApiSocialActions.CREATE.20251101",
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-10T08:56:21.514Z"
+  },
+  {
     "id": "post_1794252667693",
     "topic": "Why Node.js `pg-pool` default configurations fail under 10k RPS: Libuv thread pool starvation vs PostgreSQL max_connections",
     "language": "EN",
