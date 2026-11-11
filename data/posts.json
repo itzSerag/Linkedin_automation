@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794408223226",
+    "topic": "Why Node.js `pg-pool` default configurations fail under 10k RPS: Libuv thread pool starvation vs PostgreSQL max_connections",
+    "language": "EN",
+    "hook": "When your Node.js service hits 10k RPS, the default 'pg-pool' configuration becomes a ticking time bomb.",
+    "postText": "When your Node.js service hits 10k RPS, the default 'pg-pool' configuration becomes a ticking time bomb.\n\nMost devs set 'max: 10' or 'max: 20' because they think fewer connections equal higher stability. At high throughput, this creates a catastrophic bottleneck.\n\nHere is what actually happens under load:\n\n1. Libuv Starvation: When your pool is exhausted, requests queue up in your application layer. This keeps event loop threads occupied waiting for a connection slot, blocking I/O for other parts of the system.\n\n2. Connection Churn: If your 'idleTimeoutMillis' is too aggressive, you end up opening and closing TCP connections constantly. The TLS handshake overhead will spike your CPU usage into the red.\n\n3. PostgreSQL Exhaustion: If you try to fix this by blindly bumping the pool size, you hit 'max_connections' on your DB, leading to immediate connection rejection and cascading failures.\n\nStop guessing your pool size. Start monitoring 'pending' vs 'active' connections and ensure your connection count matches your DB's total capacity across all service replicas.\n\n#nodejs #postgresql #systemdesign",
+    "firstCommentText": "Monitor pool usage metrics using internal events or simple p99 latency probes to find the sweet spot for your infrastructure.",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794408216/linkedin_posts/post_1794408216358_1794408216359.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7526293565531090944",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7526293565531090944/",
+    "firstCommentStatus": "failed: Not enough permissions to access: partnerApiSocialActions.CREATE.20251101",
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-11T14:43:43.226Z"
+  },
+  {
     "id": "post_1794300981514",
     "topic": "مشكلة الـ Cache Stampede في Node.js & Redis: كيف تتسبب الـ Thundering Herd Problem في إسقاط قاعدة بيانات PostgreSQL وكيف تحلها باستراتيجية Probabilistic Early Expiration (XFetch)",
     "language": "AR",
