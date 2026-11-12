@@ -347,17 +347,101 @@ try {
 export async function testGeminiConnection() {
   const ai = getGeminiClient();
   const config = loadConfig();
-  const model = config.ai?.geminiModel || 'gemini-2.5-pro';
   if (!ai) return { success: false, message: 'GEMINI_API_KEY is not set in .env' };
-  try {
-    const response = await ai.models.generateContent({
-      model,
-      contents: 'Ping test. Reply with: OK',
-    });
-    return { success: true, message: `Connected to Gemini (${model})!`, reply: response.text?.trim() };
-  } catch (error) {
-    return { success: false, message: error.message || 'Gemini connection failed' };
+
+  const preferredModel = config.ai?.geminiModel && config.ai.geminiModel !== 'gemini-2.5-pro'
+    ? config.ai.geminiModel
+    : 'gemini-3.8-flash';
+
+  const candidateModels = [
+    preferredModel,
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite'
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+  let lastError = null;
+  for (const model of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: 'Ping test. Reply with: OK',
+      });
+      return { success: true, message: `Connected to Gemini (${model})!`, reply: response.text?.trim() };
+    } catch (error) {
+      lastError = error;
+    }
   }
+
+  return { success: false, message: lastError?.message || 'Gemini connection failed' };
+}
+
+export async function generateIdeasWithAI({ count = 5 } = {}) {
+  const config = loadConfig();
+  const profile = config.profile || {};
+  const currentEnv = loadEnv();
+
+  const prompt = `
+Generate ${count} viral, highly technical post topic ideas for a ${profile.currentRole || 'Backend/Fullstack'} engineer with stack: ${profile.primaryTechStack || 'Node, PostgreSQL, Docker, Redis'}.
+Include a mix of:
+- 2 topics in Arabic (العربية التقنية المتخصصة مع المصطلحات الإنجليزية)
+- 3 topics in English
+Each topic must be specific, counter-intuitive or architecture/performance focused (no generic beginner fluff).
+
+Return strictly a JSON array:
+[
+  {
+    "topic": "...",
+    "category": "Backend / Database / System Design",
+    "level": "Junior/Mid" or "Mid/Senior",
+    "language": "EN" or "AR"
+  }
+]
+`;
+
+  if (config.ai?.provider === 'openai' && currentEnv.OPENAI_API_KEY) {
+    const openai = getOpenAIClient();
+    const comp = await openai.chat.completions.create({
+      model: config.ai?.openaiModel || 'gpt-4o',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' }
+    });
+    const parsed = JSON.parse(comp.choices[0].message.content.trim());
+    return Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
+  }
+
+  const ai = getGeminiClient();
+  if (!ai) {
+    throw new Error('GEMINI_API_KEY is not configured in Settings');
+  }
+
+  const preferredModel = config.ai?.geminiModel && config.ai.geminiModel !== 'gemini-2.5-pro'
+    ? config.ai.geminiModel
+    : 'gemini-3.8-flash';
+
+  const candidateModels = [
+    preferredModel,
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite'
+  ].filter((m, idx, arr) => m && arr.indexOf(m) === idx);
+
+  let lastError = null;
+  for (const model of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      const parsed = JSON.parse(response.text.trim());
+      return Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(lastError?.message || 'Failed to generate ideas with Gemini');
 }
 
 export async function testOpenAIConnection() {

@@ -23,13 +23,13 @@ import {
 import {
   testGeminiConnection,
   testOpenAIConnection,
-  generatePostWithAI
+  generatePostWithAI,
+  generateIdeasWithAI
 } from './services/gemini.js';
 import { testCloudinaryConnection, uploadImageToCloudinary } from './services/cloudinary.js';
 import { generateVisualCard } from './services/visualCard.js';
 import { testTelegramConnection } from './services/telegram.js';
 import { executePostPipeline, publishExistingDraft, initScheduler } from './services/scheduler.js';
-import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +41,9 @@ const PORT = env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Always serve uploaded and generated media statically
+app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
 // Serve static frontend assets (built React app from frontend/dist if available, else public)
 const distPath = path.join(rootDir, 'frontend', 'dist');
@@ -62,7 +65,7 @@ app.get('/api/status', (req, res) => {
     linkedin: linkedinStatus,
     ai: {
       provider: config.ai?.provider || 'gemini',
-      geminiModel: config.ai?.geminiModel || 'gemini-2.5-pro',
+      geminiModel: config.ai?.geminiModel || 'gemini-3.8-flash',
       openaiModel: config.ai?.openaiModel || 'gpt-4o',
       isGeminiConfigured: Boolean(currentEnv.GEMINI_API_KEY),
       isOpenAIConfigured: Boolean(currentEnv.OPENAI_API_KEY)
@@ -176,53 +179,13 @@ app.delete('/api/ideas/:id', (req, res) => {
 // AI Generate 5 ideas
 app.post('/api/ideas/ai-generate', async (req, res) => {
   const currentEnv = loadEnv();
-  const config = loadConfig();
-  const profile = config.profile || {};
 
   if (!currentEnv.GEMINI_API_KEY && !currentEnv.OPENAI_API_KEY) {
     return res.status(400).json({ error: 'Please set your Gemini or OpenAI API Key in Settings first.' });
   }
 
   try {
-    const prompt = `
-Generate 5 viral, highly technical post topic ideas for a ${profile.currentRole || 'Backend/Fullstack'} engineer with stack: ${profile.primaryTechStack || 'Node, PostgreSQL, Docker'}.
-Include a mix of:
-- 2 topics in Arabic (العربية التقنية المتخصصة)
-- 3 topics in English
-Each topic must be specific, counter-intuitive or architecture/performance focused (no generic beginner fluff).
-
-Return strictly JSON array:
-[
-  {
-    "topic": "...",
-    "category": "Backend / Database / System Design",
-    "level": "Junior/Mid" or "Mid/Senior",
-    "language": "EN" or "AR"
-  }
-]
-`;
-
-    let generated = [];
-    if (config.ai?.provider === 'openai' && currentEnv.OPENAI_API_KEY) {
-      const { OpenAI } = await import('openai');
-      const openai = new OpenAI({ apiKey: currentEnv.OPENAI_API_KEY });
-      const comp = await openai.chat.completions.create({
-        model: config.ai?.openaiModel || 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' }
-      });
-      const parsed = JSON.parse(comp.choices[0].message.content.trim());
-      generated = Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
-    } else {
-      const ai = new GoogleGenAI({ apiKey: currentEnv.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: config.ai?.geminiModel || 'gemini-2.5-pro',
-        contents: prompt,
-        config: { responseMimeType: 'application/json' }
-      });
-      const parsed = JSON.parse(response.text.trim());
-      generated = Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
-    }
+    const generated = await generateIdeasWithAI({ count: 5 });
 
     const ideas = loadIdeas();
     const formatted = generated.map((item, idx) => ({
@@ -240,6 +203,10 @@ Return strictly JSON array:
 
     res.json({ success: true, added: formatted });
   } catch (error) {
+    console.error('AI Ideas generation error:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate ideas' });
+  }
+});
     console.error('AI Ideas generation error:', error);
     res.status(500).json({ error: error.message || 'Failed to generate ideas' });
   }
