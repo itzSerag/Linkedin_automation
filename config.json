@@ -22,13 +22,13 @@
     "languageMode": "alternate",
     "nextLanguage": "EN",
     "includeVisualCard": true,
-    "autoPostFirstComment": true,
+    "autoPostFirstComment": false,
     "notifyTelegram": true,
     "goldenHourAlert": true
   },
   "style": {
-    "targetCharMin": 850,
-    "targetCharMax": 1300,
+    "targetCharMin": 1050,
+    "targetCharMax": 1650,
     "maxHashtags": 3,
     "tone": "Ultra-human, pragmatic, engineering-first, zero corporate buzzwords",
     "endingStyle": "strong_conclusion",

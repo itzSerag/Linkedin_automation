@@ -86,13 +86,16 @@ AUTHENTIC WRITING BLUEPRINT:
      "يا جماعة، إيه حوار [X] مع [Y]؟ ليه تيمات كتير بتستخدم [X] بدل [Y] العادي؟ الموضوع أبسط بكتير مما تتخيل:"
      / "Quick question for backend engineers: what's the actual deal with [X] vs [Y] in production? It’s much simpler than it seems:"
 
-3. PACING & STRUCTURE:
-   - Short, punchy opening hook (1-3 lines).
-   - The Reality / Symptoms: A clean bullet list of what went wrong or why the naive way fails (e.g. "- الـ Image حجمها كبير", "- الـ Build بياخد وقت أطول من اللازم").
-   - The Practical Playbook / Schema: Bold section headers with real, concrete production decisions (e.g., "Multi-stage Build:", "Alpine ولا Slim؟:", "Security:", "Environment Variables:").
-   - The Senior Pragmatic Takeaway: Philosophical, humble, and practical (e.g., "في الآخر، الهدف بالنسبة لي مش إن الكود يبقى بيشتغل وبس، لكن يبقى سهل الصيانة وأقدر أرجعله بعد شهور وأنا فاهمه كويس").
-   - Friendly Community Sign-off: An open invitation for peer thoughts or trade-offs (e.g., "لو عندك Practices تانية بتعتمد عليها، ياريت تشاركها معانا!").
-   - Post Length: Between ${style.targetCharMin || 850} and ${style.targetCharMax || 1350} characters with plenty of breathing room.
+3. PACING & STRUCTURE (CRITICAL - NEVER LEAVE THE SOLUTION INCOMPLETE):
+   - Short, punchy opening hook (1-3 lines) using Serag's signature storytelling style.
+   - The Reality / Symptoms: Concrete bullet points of what actually went wrong in production and why the naive assumption failed.
+   - MANDATORY: THE FULL PRACTICAL PRODUCTION FIX (الحل العملي الكامل والمفصل في قلب البوست):
+     * NEVER stop after stating the problem. NEVER leave the solution vague, cut short, or deferred to a card/comment!
+     * The post body MUST deliver the complete, actionable, step-by-step production fix with clear bold headers or numbered points (e.g. "1. ضبط الـ Threadpool:", "2. فصل الـ CPU Tasks بـ Worker Threads:", "3. التحويل لـ Background Queue مع Redis & BullMQ:").
+     * Include exact configuration decisions, technical trade-offs, and practical reasoning so the reader gets a complete, high-value engineering playbook.
+   - The Senior Pragmatic Takeaway: A relatable analogy or philosophical engineering rule (e.g., "في الآخر، الـ Main Thread في Node.js زي الكاشير في المطعم: وظيفته ياخد الأوردرات بسرعة ويسلمها للمطبخ، مش يدخل المطبخ يطبخ بنفسه 😅").
+   - Friendly Community Sign-off: An open invitation for peer thoughts or production experiences (e.g., "قابلت المشكلة دي قبل كده؟ وبتحلها إزاي عندك في Production؟").
+   - Post Length: Between ${style.targetCharMin || 1050} and ${style.targetCharMax || 1650} characters with plenty of depth and breathing room.
 
 4. HASHTAGS: Exactly 3 to 5 relevant technical hashtags at the very bottom (e.g. #nodejs #backend #systemdesign #docker #devops).
 5. ${commentRule}
