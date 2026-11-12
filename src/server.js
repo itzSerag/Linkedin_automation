@@ -207,10 +207,6 @@ app.post('/api/ideas/ai-generate', async (req, res) => {
     res.status(500).json({ error: error.message || 'Failed to generate ideas' });
   }
 });
-    console.error('AI Ideas generation error:', error);
-    res.status(500).json({ error: error.message || 'Failed to generate ideas' });
-  }
-});
 
 // 4. Posts & Metrics Loop
 app.get('/api/posts', (req, res) => {
