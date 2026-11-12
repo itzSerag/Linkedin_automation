@@ -100,6 +100,7 @@ export async function executePostPipeline({
     console.log('[Pipeline] Generating technical visual card...');
     const cardData = draft.visualCard || {};
     const cardBuffer = await generateVisualCard({
+      style: cardData.style || null,
       type: cardData.type || 'takeaways',
       theme: cardData.theme || null,
       title: cardData.title || topic,

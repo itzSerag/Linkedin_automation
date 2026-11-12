@@ -459,6 +459,7 @@ app.post('/api/generate-preview', async (req, res) => {
     // Generate real visual card for preview
     const cardData = draft.visualCard || {};
     const cardBuffer = await generateVisualCard({
+      style: cardData.style || null,
       type: cardData.type || 'takeaways',
       theme: cardData.theme || null,
       title: cardData.title || draft.topic,

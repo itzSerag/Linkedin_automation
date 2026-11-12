@@ -96,7 +96,7 @@ AUTHENTIC WRITING BLUEPRINT:
 
 4. HASHTAGS: Exactly 3 to 5 relevant technical hashtags at the very bottom (e.g. #nodejs #backend #systemdesign #docker #devops).
 5. ${commentRule}
-6. VISUAL CARD SPEC: Provide data for a modern technical visual card (code snippet, benchmark comparison, or key takeaways). All visualCard text, titles, snippets, and takeaways MUST be in English Latin letters even if the post body is Arabic.
+6. VISUAL CARD SPEC: Provide data for a modern technical visual card (code snippet, benchmark comparison, or key takeaways). Select a diverse visual style from: 'paper' (warm notebook / handwritten notes / sticky pads), 'painted' (vibrant artistic canvas poster), 'blueprint' (CAD architectural blueprint), 'brutalist' (high-contrast neo-brutalism creator card), or 'terminal' (dark cyber IDE studio). All visualCard text, titles, snippets, and takeaways MUST be in English Latin letters even if the post body is Arabic.
 
 REFERENCE INSPIRATION POSTS (ACTUAL HIGH-PERFORMING EXAMPLES):
 ${inspiration || 'No past inspiration posts provided.'}
@@ -118,6 +118,7 @@ You MUST respond strictly in valid JSON matching this schema:
   "firstCommentText": "The first comment text (empty string if no link requested)",
   "charCount": 1100,
   "visualCard": {
+    "style": "paper" or "painted" or "blueprint" or "brutalist" or "terminal",
     "type": "code" or "takeaways" or "benchmark",
     "theme": "indigo" or "emerald" or "violet" or "amber" or "cyan",
     "title": "Short punchy card title (max 5 words, in English)",
