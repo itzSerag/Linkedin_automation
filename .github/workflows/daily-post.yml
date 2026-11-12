@@ -2,8 +2,8 @@ name: Daily LinkedIn Post Pipeline
 
 on:
   schedule:
-    # Runs at 06:45 UTC daily (08:45 AM Africa/Cairo - Peak Morning Window)
-    - cron: '45 6 * * *'
+    # Runs at 06:38 UTC daily (around 08:40 - 08:45 AM Cairo time, avoiding the :00/:15/:30/:45 runner traffic spikes)
+    - cron: '38 6 * * *'
   workflow_dispatch:
 
 jobs:
