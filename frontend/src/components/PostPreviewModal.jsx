@@ -10,7 +10,8 @@ export default function PostPreviewModal({
   isPublishing,
   onRegenerate,
   onPublish,
-  onCopy
+  onCopy,
+  onUpdateDraftText
 }) {
   if (!isOpen) return null;
 
@@ -73,12 +74,16 @@ export default function PostPreviewModal({
 
               {/* Post Text */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">LinkedIn Post Text:</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300">LinkedIn Post Text:</label>
+                  <span className="text-[11px] text-emerald-400 font-medium">✏️ Editable (tweak before publishing)</span>
+                </div>
                 <Textarea
                   value={draft.postText || ''}
-                  readOnly
-                  rows={9}
-                  className="leading-relaxed font-sans text-xs"
+                  onChange={(e) => onUpdateDraftText?.(e.target.value)}
+                  rows={11}
+                  className="leading-relaxed font-sans text-xs focus:ring-1 focus:ring-blue-500"
+                  placeholder="Review or tweak your post text here..."
                 />
               </div>
 

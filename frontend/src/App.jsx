@@ -465,6 +465,7 @@ export default function App() {
         onRegenerate={() => openPreview(null, null)}
         onPublish={handlePublishFromModal}
         onCopy={handleCopyText}
+        onUpdateDraftText={(newText) => setCurrentDraft(prev => prev ? ({ ...prev, postText: newText }) : prev)}
       />
     </div>
   );

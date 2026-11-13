@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794572999531",
+    "topic": "أهمية معالجة Concurrency و Race Conditions في الـ Database",
+    "language": "AR",
+    "hook": "في أول مرة واجهت فيها Race Condition في Production، كنت فاكر إني محتاج أغير الـ Architecture كله، لكن المشكلة طلعت في كام سطر SQL بسيط.",
+    "postText": "في أول مرة واجهت فيها Race Condition في Production، كنت فاكر إني محتاج أغير الـ Architecture كله، لكن المشكلة طلعت في كام سطر SQL بسيط.\n\nلما بتبدأ تكبر السيستم، بتكتشف إن الـ Application Layer لوحده مش كفاية عشان يضمن الـ Data Integrity. تخيل عندك Feature لـ Wallet Balance، اتنين Requests وصلوا في نفس الوقت، الاتنين قروا الـ Balance بـ 100، الاتنين عملوا Deduction لـ 50، والنتيجة النهائية بقت 50 بدل ما تبقى 0. ده اللي بنسميه الـ Lost Update Problem.\n\nإزاي تحل الحوار ده وتخلي السيستم بتاعك Solid؟\n\n1. استخدام SELECT FOR UPDATE:\nده أقوى سلاح في إيدك. لما تعمل Lock للـ Row ده، أي Transaction تانية تحاول تعمل Read أو Update لنفس الـ Row هتستنى لحد ما الـ Transaction بتاعتك تخلص. \n\n2. Atomic Updates:\nبدل ما تجيب الـ Data وبعدين تعمل Update، اعمل الـ Operation جوه الـ SQL Query نفسها: \nUPDATE wallets SET balance = balance - 50 WHERE id = 1 AND balance >= 50;\nكده الـ Database Engine بيضمن إن العملية بتتم بشكل Atomic تماماً.\n\n3. Optimistic Concurrency Control (OCC):\nاستخدم Version column في الـ Table. قبل كل Update اتأكد إن الـ Version لسه زي ما هو: \nUPDATE products SET stock = stock - 1, version = version + 1 WHERE id = 123 AND version = current_version;\nلو الـ Query رجعت 0 rows affected، يبقى في حد سبقك، ومن هنا تقدر تعمل Retry أو تطلع Error للمستخدم.\n\nفي الآخر، الـ Database مش مجرد مخزن للبيانات، دي الـ Final Authority بتاع السيستم بتاعك. لو معالجتش الـ Race Conditions على مستوى الـ Database، الـ Bugs هتظهرلك في أوقات حرجة جداً، وغالباً هتبقى صعبة في الـ Debugging.\n\nبتقابل مشاكل الـ Concurrency إزاي في المشاريع بتاعتك؟ وهل بتعتمد على DB Locks ولا بتحاول تحل الـ Logic في الـ Application Layer؟\n\n#postgresql #backend #systemdesign #database #concurrency",
+    "firstCommentText": "تفتكروا الـ Transaction Isolation Levels في PostgreSQL بتأثر على الأداء بشكل كبير؟ شاركوني تجاربكم!",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794572926/linkedin_posts/preview_1794572925103_1794572925106.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7526984702147174401",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7526984702147174401/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-13T12:29:59.531Z"
+  },
+  {
     "id": "post_1794498441271",
     "topic": "لماذا تتوقف استجابة الـ Event Loop في Express رغم استخدام Async/Await؟ تحليل مشكلة CPU-Bound Tasks داخل Docker وكيف يحلها ضبط `UV_THREADPOOL_SIZE` و Worker Threads",
     "language": "AR",
@@ -14,9 +35,10 @@
     "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7526671987881041920/",
     "firstCommentStatus": null,
     "metrics": {
-      "impressions": 0,
-      "reactions": 0,
-      "comments": 0
+      "impressions": 2000,
+      "reactions": 5,
+      "comments": 0,
+      "updatedAt": "2026-11-13T12:33:39.807Z"
     },
     "createdAt": "2026-11-12T15:47:21.271Z"
   },

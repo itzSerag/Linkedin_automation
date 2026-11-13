@@ -14,6 +14,57 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey: env.OPENAI_API_KEY });
 }
 
+export function safeJsonParse(rawText) {
+  if (!rawText) throw new Error('Empty AI response text');
+  let text = String(rawText).trim();
+
+  // Strip markdown code block wrappers
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    try {
+      let inString = false;
+      let escaped = false;
+      let result = '';
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '"' && !escaped) {
+          inString = !inString;
+          result += char;
+        } else if (inString) {
+          if (char === '\n') {
+            result += '\\n';
+          } else if (char === '\r') {
+            result += '\\r';
+          } else if (char === '\t') {
+            result += '\\t';
+          } else if (char.charCodeAt(0) < 32) {
+            // Drop invalid ASCII control characters
+          } else {
+            result += char;
+          }
+        } else {
+          result += char;
+        }
+        escaped = (char === '\\' && !escaped);
+      }
+
+      return JSON.parse(result);
+    } catch (sanitizedErr) {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      throw err;
+    }
+  }
+}
+
 export async function generatePostWithAI({ topic, language = 'EN', level = 'Mid' }) {
   const config = loadConfig();
   const env = loadEnv();
@@ -165,7 +216,7 @@ You MUST respond strictly in valid JSON matching this schema:
         temperature: 0.7
       });
 
-      const parsed = JSON.parse(completion.choices[0].message.content.trim());
+      const parsed = safeJsonParse(completion.choices[0].message.content);
       return {
         success: true,
         ...parsed,
@@ -211,7 +262,7 @@ You MUST respond strictly in valid JSON matching this schema:
         }
       });
 
-      const parsed = JSON.parse(response.text.trim());
+      const parsed = safeJsonParse(response.text);
       return {
         success: true,
         ...parsed,
@@ -409,7 +460,7 @@ Return strictly a JSON array:
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' }
     });
-    const parsed = JSON.parse(comp.choices[0].message.content.trim());
+    const parsed = safeJsonParse(comp.choices[0].message.content);
     return Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
   }
 
@@ -437,7 +488,7 @@ Return strictly a JSON array:
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
-      const parsed = JSON.parse(response.text.trim());
+      const parsed = safeJsonParse(response.text);
       return Array.isArray(parsed) ? parsed : (parsed.topics || parsed.ideas || []);
     } catch (error) {
       lastError = error;

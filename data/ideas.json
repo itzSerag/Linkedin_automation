@@ -1,5 +1,95 @@
 [
   {
+    "id": "idea-ai-1794573259796-0",
+    "topic": "Why your Redis cache might be slowing down your PostgreSQL database: Understanding the 'Cache Stampede' and how to solve it with Probabilistic Early Recomputation.",
+    "category": "Backend / Database / System Design",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:34:19.796Z"
+  },
+  {
+    "id": "idea-ai-1794573259796-1",
+    "topic": "Beyond simple joins: Designing a low-latency relational schema for high-throughput social feeds using materialized views and Redis sorted sets.",
+    "category": "Backend / Database / System Design",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:34:19.796Z"
+  },
+  {
+    "id": "idea-ai-1794573259796-2",
+    "topic": "Docker Multi-stage builds are not enough: Optimizing Node.js container startup time and memory footprint for serverless-like cold start performance.",
+    "category": "Backend / System Design",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:34:19.796Z"
+  },
+  {
+    "id": "idea-ai-1794573259796-3",
+    "topic": "لماذا يجب أن تتوقف عن استخدام الـ ORM في العمليات المعقدة؟ تحليل أداء الـ Query Execution Plan عند التعامل مع آلاف الـ Records في PostgreSQL.",
+    "category": "Backend / Database",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:34:19.796Z"
+  },
+  {
+    "id": "idea-ai-1794573259796-4",
+    "topic": "بناء أنظمة (Distributed Systems) قادرة على الصمود: كيف يمكنك إدارة الـ Data Consistency بين الـ PostgreSQL والـ Redis باستخدام نمط الـ Transactional Outbox؟",
+    "category": "Backend / System Design",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:34:19.796Z"
+  },
+  {
+    "id": "idea-ai-1794573195123-0",
+    "topic": "Why relying on standard Redis TTLs in high-throughput Node.js microservices causes Cache Stampedes (and how implementing the XFetch Probabilistic Early Expiration algorithm fixed our 99th percentile latency spikes)",
+    "category": "Backend / Performance",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:33:15.123Z"
+  },
+  {
+    "id": "idea-ai-1794573195123-1",
+    "topic": "Stop using stateless JWTs for real-time session revocation: Scaling Express & Socket.io to 1M concurrent connections using a hybrid Redis Bloom Filter + PostgreSQL architecture",
+    "category": "System Design / Security",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:33:15.123Z"
+  },
+  {
+    "id": "idea-ai-1794573195123-2",
+    "topic": "Optimizing Dockerized React & Node.js apps for heavy data tables: Replacing REST pagination with Server-Sent Events (SSE) and Redis Read-Through Pipelines to drop TTFB by 75%",
+    "category": "Fullstack / Performance",
+    "level": "Mid/Senior",
+    "language": "EN",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:33:15.123Z"
+  },
+  {
+    "id": "idea-ai-1794573195123-3",
+    "topic": "كيف تسبب الـ Connection Pooling الخاطئ بين Node.js و PostgreSQL في حوادث Memory Leaks واختناق الـ Event Loop أثناء الـ Traffic Spikes، وكيف ضبطنا PgBouncer في بيئة Docker لحلها",
+    "category": "Database / Backend",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:33:15.123Z"
+  },
+  {
+    "id": "idea-ai-1794573195123-4",
+    "topic": "لماذا قد يفشل الـ Distributed Locking عبر Redis (Redlock Algorithm) في الأنظمة الموزعة عند حدوث Clock Drift أو Node.js GC Pauses، وكيف تتجنب تضارب البيانات (Data Corruption)",
+    "category": "System Design / Distributed Systems",
+    "level": "Mid/Senior",
+    "language": "AR",
+    "status": "pending",
+    "createdAt": "2026-11-13T12:33:15.123Z"
+  },
+  {
     "id": "idea-ai-1794252243298-0",
     "topic": "Why Node.js `pg-pool` default configurations fail under 10k RPS: Libuv thread pool starvation vs PostgreSQL max_connections",
     "category": "Backend / Database",
