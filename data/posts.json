@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794576883442",
+    "topic": "لماذا يجب أن تتوقف عن استخدام الـ ORM في العمليات المعقدة؟ تحليل أداء الـ Query Execution Plan عند التعامل مع آلاف الـ Records في PostgreSQL.",
+    "language": "AR",
+    "hook": "في أول مرة استعملت فيها ORM لمشروع ضخم، كنت فاكر إني بكتب Clean Code وبسّرع الـ Development.. لحد ما اكتشفت إن الـ Database بدأت تنهار مع أول مليون Record:",
+    "postText": "في أول مرة استعملت فيها ORM لمشروع ضخم، كنت فاكر إني بكتب Clean Code وبسّرع الـ Development.. لحد ما اكتشفت إن الـ Database بدأت تنهار مع أول مليون Record:\n\nكنت فاكر إني شاطر إني بكتب `user.findMany()` لحد ما عملت `EXPLAIN ANALYZE` واكتشفت الكارثة.\n\nلما بتتعامل مع آلاف الـ Records في PostgreSQL، الـ ORM غالباً بيعمل:\n1. N+1 Query Problem اللي بيستهلك الـ Connection Pool.\n2. Fetching لـ unnecessary columns اللي بتزود الـ I/O.\n3. اختيار suboptimal execution plan بسبب الـ abstraction المبالغ فيه.\n\nلما تحس إن الـ Query بطيئة، متقولش \"الداتابيز محتاجة Scaling\".. بص الأول على الـ Execution Plan:\n\n1. افحص الـ Sequential Scan: لو لقيته بيعمله على الـ Table، يعني الـ Index بتاعك مش مستخدم صح بسبب الـ Query الغريب اللي الـ ORM ولده.\n2. قارن الـ Cost: الـ ORM ساعات بيعمل Joins بطريقة مش منطقية، وده بيبوظ الـ Query Planner بتاع PostgreSQL.\n3. الـ Raw SQL هو المنقذ: في الـ Analytics أو الـ Batch Processing، بلاش تخلي الـ ORM يقرر مكانك. اكتب الـ SQL بنفسك عشان تستفيد من الـ Composite Indexes والـ Window Functions.\n\nفي الآخر، الـ ORM أداة ممتازة للـ CRUD البسيط، لكن في الـ Complex Logic، أنت محتاج تكون فاهم الـ DB بتفكر إزاي تحت الكبوت.\n\nفي الآخر، الـ Query Planner بتاع Postgres أذكى منك ومني.. بس هو محتاج منك SQL واضح ومش متبهدل بـ abstraction تقيل. \n\nقابلت مشاكل مشابهة مع الـ ORM في Production؟ بتحلها إزاي؟\n\n#postgresql #backend #database #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794576750/linkedin_posts/preview_1794576751529_1794576751530.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7527000992488271872",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7527000992488271872/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-13T13:34:43.442Z"
+  },
+  {
     "id": "post_1794572999531",
     "topic": "أهمية معالجة Concurrency و Race Conditions في الـ Database",
     "language": "AR",

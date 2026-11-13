@@ -60,6 +60,17 @@ export async function exchangeOAuthCode(code) {
   }
 }
 
+/**
+ * Escapes reserved characters for LinkedIn's Little Text Format in the commentary field.
+ * LinkedIn's Posts API silently truncates posts at unescaped parentheses '()', brackets '[]',
+ * braces '{}', asterisks, underscores, tildes, pipes, or angle brackets because it parses
+ * them as entity markup (mentions). Escaping them ensures LinkedIn renders the complete full post!
+ */
+export function escapeLinkedInCommentary(text) {
+  if (!text) return '';
+  return String(text).replace(/([\\|{}\[\]()<>*_~])/g, '\\$1');
+}
+
 export async function uploadImageToLinkedIn(imageBuffer) {
   const env = loadEnv();
   const accessToken = env.LINKEDIN_ACCESS_TOKEN;
@@ -143,11 +154,12 @@ export async function publishLinkedInPost({ text, imageBuffer, imageUrl, firstCo
     }
   }
 
-  // Prepare Post Body for /rest/posts
+  // Prepare Post Body for /rest/posts with escaped Little Text format
+  const formattedText = escapeLinkedInCommentary(text);
   const authorUrn = `urn:li:person:${memberId}`;
   const postPayload = {
     author: authorUrn,
-    commentary: text,
+    commentary: formattedText,
     visibility: 'PUBLIC',
     distribution: {
       feedDistribution: 'MAIN_FEED',
@@ -193,7 +205,7 @@ export async function publishLinkedInPost({ text, imageBuffer, imageUrl, firstCo
         lifecycleState: 'PUBLISHED',
         specificContent: {
           'com.linkedin.ugc.ShareContent': {
-            shareCommentary: { text },
+            shareCommentary: { text: formattedText },
             shareMediaCategory: imageUrn ? 'IMAGE' : 'NONE',
             media: imageUrn ? [
               {
