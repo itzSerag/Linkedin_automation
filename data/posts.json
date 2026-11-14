@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794663966337",
+    "topic": "بناء أنظمة (Distributed Systems) قادرة على الصمود: كيف يمكنك إدارة الـ Data Consistency بين الـ PostgreSQL والـ Redis باستخدام نمط الـ Transactional Outbox؟",
+    "language": "AR",
+    "hook": "في أول مرة حاولت أعمل Sync بين PostgreSQL و Redis في مشروعي، كنت فاكر الموضوع هيخلص في سطرين كود: اكتب في الـ DB وبعدها أعمل redis.set() على طول.. لكن بعد شوية Deploys في Production بدأت تظهر المصايب! 😅",
+    "postText": "في أول مرة حاولت أعمل Sync بين PostgreSQL و Redis في مشروعي، كنت فاكر الموضوع هيخلص في سطرين كود: اكتب في الـ DB وبعدها أعمل redis.set() على طول.. لكن بعد شوية Deploys في Production بدأت تظهر المصايب! 😅\n\nالسيرفر يقع في النص بعد ما الـ DB تكتب وقبل ما Redis يتحدث، أو الـ Network يحصل فيها Glitch، فتكتشف إن الـ DB فيها داتا والـ Redis فيه داتا تانية خالص!\n\nالمشكلة دي مشهورة جداً واسمها الـ Dual Write Problem، وللأسف مفيش Atomic Transaction تقدر تضمن لك إن الـ DB والـ Cache يتحدثوا مع بعض في نفس اللحظة.\n\nعشان نحل الحوار ده ونضمن الـ Data Consistency بنسبة 100% من غير ما السيستم يقع، الحل القياسي في الـ Distributed Systems هو الـ Transactional Outbox Pattern:\n\n1. جدول الـ Outbox داخل الـ PostgreSQL:\nبدل ما تبعت لـ Redis مباشرة جوه الـ API Controller، بنعمل جدول جديد جوه نفس الـ Database بنسميه outbox_events.\n\n2. نفس الـ ACID Transaction:\nلما ييجي أي Request يغير داتا، بنعمل INSERT للداتا الأساسية، وفي نفس الـ Transaction بالضبط بنعمل INSERT للـ Event في جدول الـ outbox_events. بكده نضمن 100% إن لو الداتا اتكتبت، الـ Event كمان اتكتب، ولو حصل Rollback الاتنين هيلغوا مع بعض!\n\n3. الـ Background Worker أو CDC:\nبنعمل Background Worker منفصل (أو نستخدم حاجة زي Debezium مع CDC) يقرأ الـ Events الجديدة من جدول الـ Outbox ويحدث الـ Redis أو يبعتها لـ Message Broker زي Kafka.\n\n4. الـ Idempotency في الـ Consumer:\nالـ Worker بعد ما يكتب في Redis بيمسح الـ Event أو بيعلمه كـ PROCESSED. وعشان نضمن الـ Reliability، المستلم لازم يكون Idempotent عشان لو قرأ الـ Event مرتين لأي سبب، الـ State تفضل سليمة ومفيش داتا تضرب.\n\nفي الآخر، التعامل مع الـ Distributed Systems محتاج دايماً تفترض إن أي Network Call ممكن تفشل في أي لحظة. الـ Dual Writes فكرة خادعة، والـ Transactional Outbox Pattern هو الباب الملكي للـ Eventual Consistency وأنت نايم مرتاح.\n\nقابلت الـ Dual Write Problem قبل كده في Production؟ وبتحلوها إزاي عندكم؟\n\n#systemdesign #postgresql #redis #backend #architecture",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794663964/linkedin_posts/post_1794663963800_1794663963801.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7527366251250163712",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7527366251250163712/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-14T13:46:06.337Z"
+  },
+  {
     "id": "post_1794576883442",
     "topic": "لماذا يجب أن تتوقف عن استخدام الـ ORM في العمليات المعقدة؟ تحليل أداء الـ Query Execution Plan عند التعامل مع آلاف الـ Records في PostgreSQL.",
     "language": "AR",
