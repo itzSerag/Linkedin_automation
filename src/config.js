@@ -15,28 +15,62 @@ const IDEAS_PATH = path.join(rootDir, 'data', 'ideas.json');
 const POSTS_PATH = path.join(rootDir, 'data', 'posts.json');
 const INSPIRATION_PATH = path.join(rootDir, 'data', 'inspiration.md');
 const ENV_PATH = path.join(rootDir, '.env');
+let configLoadFailed = false;
+let ideasLoadFailed = false;
+let postsLoadFailed = false;
+
+function writeFileAtomically(filePath, contents) {
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tempPath, contents, 'utf-8');
+    fs.renameSync(tempPath, filePath);
+    return true;
+  } catch (error) {
+    try {
+      fs.rmSync(tempPath, { force: true });
+    } catch {
+      // Preserve the original write error.
+    }
+    throw error;
+  }
+}
+
+function saveJsonFile(filePath, value, label) {
+  try {
+    writeFileAtomically(filePath, JSON.stringify(value, null, 2));
+    return true;
+  } catch (error) {
+    console.error(`Error saving ${label}:`, error);
+    return false;
+  }
+}
 
 export function loadConfig() {
   try {
     if (!fs.existsSync(CONFIG_PATH)) {
+      configLoadFailed = false;
       return {};
     }
     const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Expected a JSON object');
+    }
+    configLoadFailed = false;
+    return parsed;
   } catch (error) {
+    configLoadFailed = true;
     console.error('Error loading config.json:', error);
     return {};
   }
 }
 
 export function saveConfig(newConfig) {
-  try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Error saving config.json:', error);
-    return false;
-  }
+  if (!newConfig || typeof newConfig !== 'object' || Array.isArray(newConfig)) return false;
+  if (configLoadFailed) return false;
+  const saved = saveJsonFile(CONFIG_PATH, newConfig, 'config.json');
+  if (saved) configLoadFailed = false;
+  return saved;
 }
 
 export function loadEnv() {
@@ -73,20 +107,21 @@ export function updateEnv(updates) {
       const cleanKey = key.trim();
       if (cleanKey in updates) {
         updatedKeys.add(cleanKey);
-        process.env[cleanKey] = String(updates[cleanKey]);
-        return `${cleanKey}=${updates[cleanKey]}`;
+        return `${cleanKey}=${String(updates[cleanKey])}`;
       }
       return line;
     });
 
     for (const [key, value] of Object.entries(updates)) {
       if (!updatedKeys.has(key)) {
-        newLines.push(`${key}=${value}`);
-        process.env[key] = String(value);
+        newLines.push(`${key}=${String(value)}`);
       }
     }
 
-    fs.writeFileSync(ENV_PATH, newLines.join('\n'), 'utf-8');
+    writeFileAtomically(ENV_PATH, newLines.join('\n'));
+    for (const [key, value] of Object.entries(updates)) {
+      process.env[key] = String(value);
+    }
     dotenv.config({ path: ENV_PATH, override: true });
     return true;
   } catch (error) {
@@ -97,42 +132,50 @@ export function updateEnv(updates) {
 
 export function loadIdeas() {
   try {
-    if (!fs.existsSync(IDEAS_PATH)) return [];
-    return JSON.parse(fs.readFileSync(IDEAS_PATH, 'utf-8'));
+    if (!fs.existsSync(IDEAS_PATH)) {
+      ideasLoadFailed = false;
+      return [];
+    }
+    const parsed = JSON.parse(fs.readFileSync(IDEAS_PATH, 'utf-8'));
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array');
+    ideasLoadFailed = false;
+    return parsed;
   } catch (error) {
+    ideasLoadFailed = true;
     console.error('Error loading ideas.json:', error);
     return [];
   }
 }
 
 export function saveIdeas(ideas) {
-  try {
-    fs.writeFileSync(IDEAS_PATH, JSON.stringify(ideas, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Error saving ideas.json:', error);
-    return false;
-  }
+  if (!Array.isArray(ideas) || ideasLoadFailed) return false;
+  const saved = saveJsonFile(IDEAS_PATH, ideas, 'ideas.json');
+  if (saved) ideasLoadFailed = false;
+  return saved;
 }
 
 export function loadPosts() {
   try {
-    if (!fs.existsSync(POSTS_PATH)) return [];
-    return JSON.parse(fs.readFileSync(POSTS_PATH, 'utf-8'));
+    if (!fs.existsSync(POSTS_PATH)) {
+      postsLoadFailed = false;
+      return [];
+    }
+    const parsed = JSON.parse(fs.readFileSync(POSTS_PATH, 'utf-8'));
+    if (!Array.isArray(parsed)) throw new Error('Expected a JSON array');
+    postsLoadFailed = false;
+    return parsed;
   } catch (error) {
+    postsLoadFailed = true;
     console.error('Error loading posts.json:', error);
     return [];
   }
 }
 
 export function savePosts(posts) {
-  try {
-    fs.writeFileSync(POSTS_PATH, JSON.stringify(posts, null, 2), 'utf-8');
-    return true;
-  } catch (error) {
-    console.error('Error saving posts.json:', error);
-    return false;
-  }
+  if (!Array.isArray(posts) || postsLoadFailed) return false;
+  const saved = saveJsonFile(POSTS_PATH, posts, 'posts.json');
+  if (saved) postsLoadFailed = false;
+  return saved;
 }
 
 export function loadInspiration() {

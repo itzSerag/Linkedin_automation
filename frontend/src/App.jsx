@@ -17,6 +17,22 @@ import PostsTab from './components/PostsTab';
 import SettingsTab from './components/SettingsTab';
 import PostPreviewModal from './components/PostPreviewModal';
 
+async function requestJson(url, options) {
+  const response = await fetch(url, options);
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // The server may be offline or may have returned a non-JSON error page.
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || `Request failed (${response.status})`);
+  }
+
+  return data;
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [status, setStatus] = useState({});
@@ -28,6 +44,8 @@ export default function App() {
   // Modal & Draft state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDraft, setCurrentDraft] = useState(null);
+  const [draftError, setDraftError] = useState(null);
+  const [draftRequest, setDraftRequest] = useState({ topic: null, language: null });
   const [isDraftLoading, setIsDraftLoading] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -49,11 +67,15 @@ export default function App() {
   const fetchAll = async () => {
     try {
       const [resStatus, resConfig, resIdeas, resPosts] = await Promise.all([
-        fetch('/api/status').then(r => r.json()),
-        fetch('/api/config').then(r => r.json()),
-        fetch('/api/ideas').then(r => r.json()),
-        fetch('/api/posts').then(r => r.json())
+        requestJson('/api/status'),
+        requestJson('/api/config'),
+        requestJson('/api/ideas'),
+        requestJson('/api/posts')
       ]);
+
+      if (!Array.isArray(resIdeas) || !Array.isArray(resPosts)) {
+        throw new Error('The API returned an invalid idea or post list.');
+      }
 
       setStatus(resStatus);
       setConfig(resConfig.config || {});
@@ -62,6 +84,7 @@ export default function App() {
       setPosts(resPosts);
     } catch (err) {
       console.error('Fetch error:', err);
+      addToast(err.message || 'Could not load dashboard data. Check that the API server is running.', 'error');
     }
   };
 
@@ -84,95 +107,80 @@ export default function App() {
   const handleSaveConfig = async (payload) => {
     setIsSaving(true);
     try {
-      const res = await fetch('/api/config', {
+      await requestJson('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        addToast('✅ Configuration updated successfully!', 'success');
-        await fetchAll();
-      } else {
-        addToast('❌ Failed to update settings', 'error');
-      }
+      addToast('✅ Configuration updated successfully!', 'success');
+      await fetchAll();
     } catch (e) {
-      addToast('❌ Error connecting to backend', 'error');
+      addToast(e.message || 'Error connecting to backend', 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
   // Test Buttons
-  const handleTestGemini = async () => {
-    addToast('Testing Gemini API...', 'info');
-    const res = await fetch('/api/test/gemini', { method: 'POST' }).then(r => r.json());
-    if (res.success) {
-      addToast(`✅ ${res.message} Reply: ${res.reply}`, 'success');
-    } else {
-      addToast(`❌ Gemini: ${res.message}`, 'error');
+  const runConnectionTest = async (url, label, pendingMessage, successMessage) => {
+    addToast(pendingMessage, 'info');
+    try {
+      const result = await requestJson(url, { method: 'POST' });
+      if (result.success) {
+        addToast(successMessage || `✅ ${result.message}${result.reply ? ` Reply: ${result.reply}` : ''}`, 'success');
+      } else {
+        addToast(`❌ ${label}: ${result.message || 'Connection test failed.'}`, 'error');
+      }
+    } catch (error) {
+      addToast(`❌ ${label}: ${error.message || 'Connection test failed.'}`, 'error');
     }
   };
 
-  const handleTestOpenAI = async () => {
-    addToast('Testing OpenAI API...', 'info');
-    const res = await fetch('/api/test/openai', { method: 'POST' }).then(r => r.json());
-    if (res.success) {
-      addToast(`✅ ${res.message} Reply: ${res.reply}`, 'success');
-    } else {
-      addToast(`❌ OpenAI: ${res.message}`, 'error');
-    }
-  };
-
-  const handleTestCloudinary = async () => {
-    addToast('Testing Cloudinary...', 'info');
-    const res = await fetch('/api/test/cloudinary', { method: 'POST' }).then(r => r.json());
-    if (res.success) {
-      addToast('✅ Cloudinary connected successfully!', 'success');
-    } else {
-      addToast(`❌ Cloudinary: ${res.message}`, 'error');
-    }
-  };
-
-  const handleTestTelegram = async () => {
-    addToast('Sending Telegram test ping...', 'info');
-    const res = await fetch('/api/test/telegram', { method: 'POST' }).then(r => r.json());
-    if (res.success) {
-      addToast('✅ Telegram ping delivered to your chat!', 'success');
-    } else {
-      addToast(`❌ Telegram: ${res.message}`, 'error');
-    }
-  };
+  const handleTestGemini = () => runConnectionTest('/api/test/gemini', 'Gemini', 'Testing Gemini API...');
+  const handleTestOpenAI = () => runConnectionTest('/api/test/openai', 'OpenAI', 'Testing OpenAI API...');
+  const handleTestCloudinary = () => runConnectionTest('/api/test/cloudinary', 'Cloudinary', 'Testing Cloudinary...', '✅ Cloudinary connected successfully!');
+  const handleTestTelegram = () => runConnectionTest('/api/test/telegram', 'Telegram', 'Sending Telegram test ping...', '✅ Telegram ping delivered to your chat!');
 
   const handleAutoDetectTg = async () => {
     addToast('Checking for messages in @Linkedin_Antigravity_bot...', 'info');
-    const res = await fetch('/api/telegram/auto-detect').then(r => r.json());
-    if (res.found) {
-      addToast(`🎉 Detected Chat ID: ${res.chatId} for ${res.senderName}!`, 'success');
-      await fetchAll();
-    } else {
-      addToast(`ℹ️ ${res.message}`, 'info');
+    try {
+      const res = await requestJson('/api/telegram/auto-detect');
+      if (res.found) {
+        addToast(`🎉 Detected Chat ID: ${res.chatId} for ${res.senderName}!`, 'success');
+        await fetchAll();
+      } else {
+        addToast(`ℹ️ ${res.message}`, 'info');
+      }
+    } catch (error) {
+      addToast(error.message || 'Telegram auto-detect failed.', 'error');
     }
   };
 
   // Ideas
   const handleAddIdea = async (newIdea) => {
-    const res = await fetch('/api/ideas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newIdea)
-    });
-    if (res.ok) {
+    try {
+      await requestJson('/api/ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newIdea)
+      });
       addToast('✅ Idea saved to bank!', 'success');
       await fetchAll();
+      return true;
+    } catch (error) {
+      addToast(error.message || 'Could not save the idea.', 'error');
+      return false;
     }
   };
 
   const handleDeleteIdea = async (id) => {
     if (!window.confirm('Delete this idea?')) return;
-    const res = await fetch(`/api/ideas/${id}`, { method: 'DELETE' });
-    if (res.ok) {
+    try {
+      await requestJson(`/api/ideas/${id}`, { method: 'DELETE' });
       addToast('Idea removed', 'info');
       await fetchAll();
+    } catch (error) {
+      addToast(error.message || 'Could not delete the idea.', 'error');
     }
   };
 
@@ -180,16 +188,11 @@ export default function App() {
     setIsGeneratingAi(true);
     addToast('✨ AI is brainstorming 5 architecture topics...', 'info');
     try {
-      const res = await fetch('/api/ideas/ai-generate', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        addToast('🎉 Added 5 fresh ideas to your idea bank!', 'success');
-        await fetchAll();
-      } else {
-        addToast(`❌ ${data.error}`, 'error');
-      }
-    } catch (e) {
-      addToast('❌ Brainstorm failed', 'error');
+      await requestJson('/api/ideas/ai-generate', { method: 'POST' });
+      addToast('🎉 Added fresh ideas to your idea bank!', 'success');
+      await fetchAll();
+    } catch (error) {
+      addToast(`❌ ${error.message || 'Brainstorm failed'}`, 'error');
     } finally {
       setIsGeneratingAi(false);
     }
@@ -199,6 +202,8 @@ export default function App() {
   const openPreview = async (topic = null, lang = null) => {
     setIsModalOpen(true);
     setIsDraftLoading(true);
+    setCurrentDraft(null);
+    setDraftError(null);
     try {
       let targetLang = lang;
       if (!targetLang) {
@@ -206,15 +211,16 @@ export default function App() {
         else if (config.automation?.languageMode === 'AR') targetLang = 'AR';
         else targetLang = status.automation?.nextLanguage || 'EN';
       }
-      const res = await fetch('/api/generate-preview', {
+      setDraftRequest({ topic, language: targetLang });
+      const data = await requestJson('/api/generate-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, language: targetLang })
       });
-      const data = await res.json();
+      if (!data?.draft) throw new Error('The API did not return a draft.');
       setCurrentDraft(data.draft);
-    } catch (e) {
-      addToast('Failed to generate preview', 'error');
+    } catch (error) {
+      setDraftError(error.message || 'Failed to generate preview.');
     } finally {
       setIsDraftLoading(false);
     }
@@ -225,12 +231,11 @@ export default function App() {
     setIsPublishing(true);
     addToast('🚀 Publishing previewed post to LinkedIn...', 'info');
     try {
-      const res = await fetch('/api/publish-draft', {
+      const data = await requestJson('/api/publish-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ draft: currentDraft })
       });
-      const data = await res.json();
       setIsModalOpen(false);
       if (data.publishResult?.success) {
         addToast('🎉 Published to LinkedIn successfully!', 'success');
@@ -240,30 +245,36 @@ export default function App() {
         addToast(`ℹ️ ${data.publishResult?.message || data.message || 'Saved as draft'}`, 'info');
       }
       await fetchAll();
-    } catch (e) {
-      addToast('❌ Failed to publish', 'error');
+    } catch (error) {
+      addToast(`❌ ${error.message || 'Failed to publish'}`, 'error');
     } finally {
       setIsPublishing(false);
     }
   };
 
-  const handleCopyText = () => {
+  const handleCopyText = async () => {
     if (currentDraft?.postText) {
-      navigator.clipboard.writeText(currentDraft.postText);
-      addToast('📋 Post text copied to clipboard!', 'success');
+      try {
+        await navigator.clipboard.writeText(currentDraft.postText);
+        addToast('📋 Post text copied to clipboard!', 'success');
+      } catch {
+        addToast('Clipboard access was blocked by the browser.', 'error');
+      }
     }
   };
 
   // Metrics Save
   const handleSaveMetrics = async (postId, metrics) => {
-    const res = await fetch(`/api/posts/${postId}/metrics`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(metrics)
-    });
-    if (res.ok) {
+    try {
+      await requestJson(`/api/posts/${postId}/metrics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(metrics)
+      });
       addToast('✅ Metrics updated! Feedback loop trained.', 'success');
       await fetchAll();
+    } catch (error) {
+      addToast(error.message || 'Could not save post metrics.', 'error');
     }
   };
 
@@ -271,25 +282,22 @@ export default function App() {
   const handleImportCsv = async (csvContent) => {
     addToast('Processing CSV & training voice on top posts...', 'info');
     try {
-      const res = await fetch('/api/posts/import-csv', {
+      const data = await requestJson('/api/posts/import-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ csvContent })
       });
-      const data = await res.json();
-      if (res.ok) {
-        addToast(`🎉 ${data.message}`, 'success');
-        await fetchAll();
-      } else {
-        addToast(`❌ ${data.error}`, 'error');
-      }
-    } catch (e) {
-      addToast('❌ Failed to process CSV', 'error');
+      addToast(`🎉 ${data.message}`, 'success');
+      await fetchAll();
+      return true;
+    } catch (error) {
+      addToast(`❌ ${error.message || 'Failed to process CSV'}`, 'error');
+      return false;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-100 flex flex-col font-sans">
+    <div className="dashboard-shell min-h-screen text-slate-100 flex flex-col font-sans">
       {/* Toast Notification Container */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
@@ -308,11 +316,11 @@ export default function App() {
       <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#d76548] to-[#8659b6] flex items-center justify-center shadow-lg shadow-orange-700/15">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+              <h1 className="text-base font-bold tracking-tight text-slate-100 flex items-center gap-2">
                 LinkedIn Growth Studio
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
                   Fullstack React
@@ -327,7 +335,7 @@ export default function App() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs transition shadow-md shadow-blue-600/25 active:scale-95 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Generate & Post Now</span>
+            <span>Draft a Post</span>
           </button>
         </div>
       </header>
@@ -404,10 +412,9 @@ export default function App() {
         {activeTab === 'overview' && (
           <OverviewTab
             status={status}
-            config={config}
             posts={posts}
             onOpenPreview={() => openPreview()}
-            onPublishNow={() => openPreview()}
+            onPickTopic={() => setActiveTab('ideas')}
             onSwitchTab={setActiveTab}
           />
         )}
@@ -460,9 +467,10 @@ export default function App() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         draft={currentDraft}
+        error={draftError}
         isLoading={isDraftLoading}
         isPublishing={isPublishing}
-        onRegenerate={() => openPreview(null, null)}
+        onRegenerate={() => openPreview(draftRequest.topic, draftRequest.language)}
         onPublish={handlePublishFromModal}
         onCopy={handleCopyText}
         onUpdateDraftText={(newText) => setCurrentDraft(prev => prev ? ({ ...prev, postText: newText }) : prev)}

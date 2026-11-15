@@ -1,11 +1,63 @@
 @import "tailwindcss";
 
+@theme {
+  --color-slate-50: #fffefa;
+  --color-slate-100: #222b31;
+  --color-slate-200: #37434b;
+  --color-slate-300: #526169;
+  --color-slate-400: #65737a;
+  --color-slate-500: #7d898e;
+  --color-slate-600: #b7c0bd;
+  --color-slate-700: #d4dad5;
+  --color-slate-800: #e3e5df;
+  --color-slate-900: #fffefa;
+  --color-slate-950: #f5f3ec;
+  --color-blue-400: #b54f3a;
+  --color-blue-500: #cb6047;
+  --color-blue-600: #b84b37;
+  --color-emerald-300: #226d55;
+  --color-emerald-400: #197454;
+  --color-amber-300: #8d5d13;
+  --color-amber-400: #98630c;
+  --color-purple-300: #62439a;
+  --color-purple-400: #6744a7;
+  --color-cyan-400: #087884;
+  --color-sky-400: #176f91;
+  --color-red-300: #b23c39;
+}
+
+:root {
+  color-scheme: light;
+  --app-canvas: #f3f0e7;
+  --app-ink: #222b31;
+  --background: #f3f0e7;
+  --foreground: #222b31;
+  --card: #fffefa;
+  --card-foreground: #222b31;
+  --primary: #b84b37;
+  --primary-foreground: #fffefa;
+  --border: #e3e5df;
+  --input: #e3e5df;
+  --ring: #b84b37;
+}
+
 @layer base {
   body {
-    background-color: #0B0F17;
-    color: #F8FAFC;
+    background-color: var(--app-canvas);
+    color: var(--app-ink);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
+
+  button, input, textarea, select {
+    font: inherit;
+  }
+}
+
+.dashboard-shell {
+  background-color: var(--app-canvas);
+  background-image:
+    radial-gradient(ellipse at 8% 0%, rgba(235, 177, 143, 0.22), transparent 32rem),
+    radial-gradient(ellipse at 100% 22%, rgba(139, 179, 170, 0.15), transparent 28rem);
 }
 
 /* Custom scrollbar */
@@ -14,9 +66,9 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F17;
+  background: #f3f0e7;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1F2937;
+  background: #c9cec8;
   border-radius: 4px;
 }

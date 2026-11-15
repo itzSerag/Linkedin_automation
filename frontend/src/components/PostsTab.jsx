@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Textarea, Badge } from './ui';
-import { History, FileSpreadsheet, ExternalLink, BarChart2, Upload, Check } from 'lucide-react';
+import { History, FileSpreadsheet, ExternalLink, BarChart2, Upload } from 'lucide-react';
 
 export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
   const [showCsvBox, setShowCsvBox] = useState(false);
   const [csvContent, setCsvContent] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
   const [metricsValues, setMetricsValues] = useState({});
 
   const handleMetricChange = (postId, field, val) => {
@@ -21,15 +22,23 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
     const updated = metricsValues[postId] || {};
     const impressions = updated.impressions !== undefined ? updated.impressions : existingMetrics.impressions;
     const reactions = updated.reactions !== undefined ? updated.reactions : existingMetrics.reactions;
-    onSaveMetrics(postId, { impressions, reactions, comments: 0 });
+    const comments = updated.comments !== undefined ? updated.comments : existingMetrics.comments;
+    onSaveMetrics(postId, { impressions, reactions, comments });
   };
 
-  const handleCsvSubmit = (e) => {
+  const handleCsvSubmit = async (e) => {
     e.preventDefault();
-    if (!csvContent.trim()) return;
-    onImportCsv(csvContent);
-    setCsvContent('');
-    setShowCsvBox(false);
+    if (!csvContent.trim() || isImporting) return;
+    setIsImporting(true);
+    try {
+      const succeeded = await onImportCsv(csvContent);
+      if (succeeded !== false) {
+        setCsvContent('');
+        setShowCsvBox(false);
+      }
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
@@ -42,7 +51,7 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Import Historical LinkedIn Posts (CSV)</h3>
+              <h3 className="text-sm font-bold text-slate-100">Import Historical LinkedIn Posts (CSV)</h3>
               <p className="text-xs text-slate-400">
                 Extracts your top 5 highest-engagement posts from LinkedIn Data Export and teaches the AI your winning voice.
               </p>
@@ -67,8 +76,8 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
             />
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setShowCsvBox(false)}>Cancel</Button>
-              <Button type="submit" variant="default" className="flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5" /> Parse & Train AI on Top Posts
+              <Button type="submit" variant="default" disabled={isImporting} className="flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" /> {isImporting ? 'Importing…' : 'Parse & Train AI on Top Posts'}
               </Button>
             </div>
           </form>
@@ -78,7 +87,7 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <History className="w-5 h-5 text-blue-400" />
             Post History & Learning Loop
           </h2>
@@ -122,7 +131,7 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
                   {/* Post Content */}
                   <div className="md:col-span-2 space-y-2">
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hook</p>
-                    <p className="text-sm font-bold text-white leading-snug">"{post.hook || ''}"</p>
+                    <p className="text-sm font-bold text-slate-100 leading-snug">"{post.hook || ''}"</p>
                     <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 whitespace-pre-wrap max-h-48 overflow-y-auto font-sans leading-relaxed">
                       {post.postText}
                     </div>
@@ -172,6 +181,8 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
                       <span className="text-xs text-slate-400">Views:</span>
                       <Input
                         type="number"
+                        min="0"
+                        step="1"
                         value={currentInputs.impressions !== undefined ? currentInputs.impressions : m.impressions}
                         onChange={(e) => handleMetricChange(post.id, 'impressions', Number(e.target.value))}
                         className="w-20 text-center h-8 text-xs"
@@ -181,8 +192,21 @@ export default function PostsTab({ posts = [], onSaveMetrics, onImportCsv }) {
                       <span className="text-xs text-slate-400">Reactions:</span>
                       <Input
                         type="number"
+                        min="0"
+                        step="1"
                         value={currentInputs.reactions !== undefined ? currentInputs.reactions : m.reactions}
                         onChange={(e) => handleMetricChange(post.id, 'reactions', Number(e.target.value))}
+                        className="w-16 text-center h-8 text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-slate-400">Comments:</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={currentInputs.comments !== undefined ? currentInputs.comments : (m.comments ?? 0)}
+                        onChange={(e) => handleMetricChange(post.id, 'comments', Number(e.target.value))}
                         className="w-16 text-center h-8 text-xs"
                       />
                     </div>

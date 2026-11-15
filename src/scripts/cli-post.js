@@ -13,9 +13,9 @@ async function run() {
       forcePublish: isForce
     });
 
-    if (result.skipped) {
+    if (result.skipped || result.isDuplicate) {
       console.log('\n========================================================');
-      console.log('ℹ️ Duplicate Guard: Post already published today.');
+      console.log(result.isDuplicate ? 'ℹ️ Pipeline guard: Another run is already active.' : 'ℹ️ Scheduled run skipped.');
       console.log('Message:', result.message);
       console.log('========================================================');
       process.exit(0);

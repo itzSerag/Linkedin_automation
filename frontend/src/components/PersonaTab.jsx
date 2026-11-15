@@ -43,7 +43,7 @@ export default function PersonaTab({ config = {}, onSave, isSaving }) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-blue-400" />
             Engineering Persona & Resume Context
           </h2>

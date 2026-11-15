@@ -1,4 +1,3 @@
-import cron from 'node-cron';
 import { loadConfig, saveConfig, loadIdeas, saveIdeas, loadPosts, savePosts } from '../config.js';
 import { generatePostWithGemini } from './gemini.js';
 import { generateVisualCard } from './visualCard.js';
@@ -6,7 +5,6 @@ import { uploadImageToCloudinary } from './cloudinary.js';
 import { publishLinkedInPost, getLinkedInStatus } from './linkedin.js';
 import { notifyPostPublished, sendTelegramMessage } from './telegram.js';
 
-let cronTask = null;
 let isPipelineRunning = false;
 
 export async function executePostPipeline({
@@ -27,6 +25,22 @@ export async function executePostPipeline({
   const config = loadConfig();
   const profile = config.profile || {};
   const automation = config.automation || {};
+
+  if (!isManual && !forcePublish && !automation.enabled) {
+    return {
+      success: true,
+      skipped: true,
+      message: 'Scheduled publishing is disabled in Settings.'
+    };
+  }
+
+  if (!isManual && !getLinkedInStatus().isConnected) {
+    return {
+      success: true,
+      skipped: true,
+      message: 'Scheduled publishing is paused because LinkedIn is not connected.'
+    };
+  }
 
   // Check if already published today (idempotency guard against duplicate daily jobs)
   if (!forcePublish) {
@@ -96,13 +110,25 @@ export async function executePostPipeline({
       level: profile.yearsOfExperience || 'Mid'
     });
 
+    if (!draft || typeof draft.postText !== 'string' || !draft.postText.trim()) {
+      throw new Error('The AI provider returned an empty post. Nothing was published.');
+    }
+
+    if (draft.isMock) {
+      throw new Error(draft.warning || 'The AI provider returned a fallback preview. Nothing was published.');
+    }
+
     // 4. Generate Visual Card
     console.log('[Pipeline] Generating technical visual card...');
     const cardData = draft.visualCard || {};
     const cardBuffer = await generateVisualCard({
-      style: cardData.style || null,
+      style: config.style?.visualStyle && config.style.visualStyle !== 'auto'
+        ? config.style.visualStyle
+        : cardData.style || null,
       type: cardData.type || 'takeaways',
-      theme: cardData.theme || null,
+      theme: config.style?.visualTheme && config.style.visualTheme !== 'auto'
+        ? config.style.visualTheme
+        : cardData.theme || null,
       title: cardData.title || topic,
       subtitle: cardData.subtitle || '',
       codeSnippet: cardData.codeSnippet || '',
@@ -160,19 +186,25 @@ export async function executePostPipeline({
 
     const pastPosts = loadPosts();
     pastPosts.unshift(newPostRecord);
-    savePosts(pastPosts);
+    if (!savePosts(pastPosts)) {
+      throw new Error('LinkedIn publishing finished, but the post history could not be saved. Check data/posts.json before running the pipeline again.');
+    }
 
     // 8. Update Idea Status
     if (selectedIdea) {
       selectedIdea.status = 'used';
       selectedIdea.usedAt = new Date().toISOString();
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) {
+        console.error('[Pipeline] Published post was saved, but the idea status could not be updated.');
+      }
     }
 
     // 9. Alternate next language in config
     if (automation.languageMode === 'alternate') {
       config.automation.nextLanguage = targetLang === 'AR' ? 'EN' : 'AR';
-      saveConfig(config);
+      if (!saveConfig(config)) {
+        console.error('[Pipeline] Published post was saved, but the next-language setting could not be updated.');
+      }
     }
 
     // 10. Send Telegram Alert with Live Link and Image
@@ -200,6 +232,13 @@ export async function executePostPipeline({
  * Directly publishes an existing reviewed preview draft without running duplicate generation.
  */
 export async function publishExistingDraft(draft) {
+  if (!draft || typeof draft.postText !== 'string' || !draft.postText.trim()) {
+    throw new Error('A non-empty post is required before publishing.');
+  }
+  if (draft.isMock) {
+    throw new Error(draft.warning || 'This is a fallback preview and cannot be published.');
+  }
+
   if (isPipelineRunning) {
     console.warn('[Pipeline] Attempted to publish draft while another run is active. Rejected duplicate process.');
     return {
@@ -253,7 +292,9 @@ export async function publishExistingDraft(draft) {
 
     const pastPosts = loadPosts();
     pastPosts.unshift(newPostRecord);
-    savePosts(pastPosts);
+    if (!savePosts(pastPosts)) {
+      throw new Error('LinkedIn publishing finished, but the post history could not be saved. Check data/posts.json before running the pipeline again.');
+    }
 
     // Mark matching idea as used
     const ideas = loadIdeas();
@@ -261,7 +302,9 @@ export async function publishExistingDraft(draft) {
     if (matchingIdea) {
       matchingIdea.status = 'used';
       matchingIdea.usedAt = new Date().toISOString();
-      saveIdeas(ideas);
+      if (!saveIdeas(ideas)) {
+        console.error('[Pipeline] Published draft was saved, but the matching idea status could not be updated.');
+      }
     }
 
     // Send Telegram alert
@@ -282,39 +325,4 @@ export async function publishExistingDraft(draft) {
   } finally {
     isPipelineRunning = false;
   }
-}
-
-export function initScheduler() {
-  const config = loadConfig();
-  const automation = config.automation || {};
-
-  if (cronTask) {
-    cronTask.stop();
-    cronTask = null;
-  }
-
-  if (!automation.enabled) {
-    console.log('[Scheduler] Automation is currently disabled in config.json');
-    return { active: false, schedule: automation.cronSchedule };
-  }
-
-  const schedule = automation.cronSchedule || '45 8 * * *';
-  console.log(`[Scheduler] Initializing cron job: "${schedule}" (${automation.timezone || 'Africa/Cairo'})`);
-
-  cronTask = cron.schedule(
-    schedule,
-    async () => {
-      console.log('[Scheduler] Triggering scheduled daily LinkedIn post...');
-      try {
-        await executePostPipeline({ isManual: false, forcePublish: false });
-      } catch (err) {
-        console.error('[Scheduler] Error during scheduled execution:', err);
-      }
-    },
-    {
-      timezone: automation.timezone || 'Africa/Cairo'
-    }
-  );
-
-  return { active: true, schedule };
 }

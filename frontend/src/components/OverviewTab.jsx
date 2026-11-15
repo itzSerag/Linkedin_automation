@@ -8,7 +8,6 @@ import {
   Lightbulb,
   TrendingUp,
   Sparkles,
-  Play,
   Eye,
   ExternalLink,
   Flame
@@ -16,10 +15,9 @@ import {
 
 export default function OverviewTab({
   status = {},
-  config = {},
   posts = [],
   onOpenPreview,
-  onPublishNow,
+  onPickTopic,
   onSwitchTab
 }) {
   const linkedin = status.linkedin || {};
@@ -28,6 +26,7 @@ export default function OverviewTab({
   const telegram = status.telegram || {};
   const automation = status.automation || {};
   const stats = status.stats || {};
+  const automationEnabled = automation.enabled === true;
 
   const nextLang = automation.nextLanguage === 'AR' ? '🇸🇦 Arabic' : '🇬🇧 English';
   const recentPosts = posts.slice(0, 3);
@@ -110,18 +109,18 @@ export default function OverviewTab({
       </div>
 
       {/* Hero Callout */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-slate-900 border border-blue-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+      <div className="p-6 rounded-2xl bg-gradient-to-br from-[#f5dfd2] via-[#fffefa] to-[#edf1e8] border border-[#e4d2c4] flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
         <div className="space-y-2 max-w-2xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="default">Autonomous Daily Engine</Badge>
+            <Badge variant={automationEnabled ? 'success' : 'warning'}>{automationEnabled ? 'Daily publishing enabled' : 'Automation paused'}</Badge>
             <Badge variant="purple">Next Post: {nextLang}</Badge>
-            <Badge variant="success">Cloud 24/7 Enabled</Badge>
+            <Badge variant="secondary">Scheduled by GitHub Actions</Badge>
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            Daily Recruiter Visibility Pipeline
+          <h2 className="text-xl font-bold text-slate-100 tracking-tight">
+            A writing room for your engineering voice
           </h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Posts 1 high-impact engineering post every day alternating between English and Arabic. Generates a dark-mode code/takeaway card, uploads to Cloudinary, adds your GitHub link in the first comment, and alerts you on Telegram. Works 24/7 even when your laptop is turned off via GitHub Actions!
+            Choose a topic, tune the voice, and review the post and artwork before publishing. When enabled, GitHub Actions handles the daily run, and fallback AI text is never published.
           </p>
         </div>
 
@@ -129,8 +128,8 @@ export default function OverviewTab({
           <Button variant="secondary" onClick={onOpenPreview} className="w-full sm:w-auto">
             <Eye className="w-4 h-4 text-slate-400" /> Preview Next Post
           </Button>
-          <Button variant="default" onClick={onPublishNow} className="w-full sm:w-auto">
-            <Play className="w-4 h-4" /> Publish Next Post
+          <Button variant="default" onClick={onPickTopic} className="w-full sm:w-auto">
+            <Lightbulb className="w-4 h-4" /> Choose a Topic
           </Button>
         </div>
       </div>
@@ -142,24 +141,24 @@ export default function OverviewTab({
             <Flame className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-xs font-bold text-amber-300">Golden Slot Strategy Active: 08:45 AM Africa/Cairo</p>
+            <p className="text-xs font-bold text-amber-300">Single scheduled runner: GitHub Actions</p>
             <p className="text-xs text-slate-400">
-              Captures morning Cairo standup commuters, peak Saudi/UAE hiring hours (09:45 AM), and European early feeds.
+              The run time is defined in UTC in <code>.github/workflows/daily-post.yml</code>. The local app does not start a competing schedule.
             </p>
           </div>
         </div>
-        <Badge variant="warning" className="hidden sm:inline-flex">High Virality</Badge>
+        <Badge variant={automationEnabled ? 'success' : 'secondary'} className="hidden sm:inline-flex">{automationEnabled ? 'Automation on' : 'Automation off'}</Badge>
       </div>
 
       {/* Quick Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cron Schedule</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">GitHub Actions Schedule</span>
             <Clock className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-xl font-bold text-white">Daily at 08:45 AM</div>
-          <p className="text-xs text-slate-500">Timezone: Africa/Cairo (UTC+2)</p>
+          <div className="text-xl font-bold text-slate-100">Daily at 06:38 UTC</div>
+          <p className="text-xs text-slate-500">Edit the workflow file to change the schedule.</p>
         </Card>
 
         <Card className="p-5 space-y-3">
@@ -167,7 +166,7 @@ export default function OverviewTab({
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Idea Bank</span>
             <Lightbulb className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-xl font-bold text-white">{stats.pendingIdeas || 0} Ideas Available</div>
+          <div className="text-xl font-bold text-slate-100">{stats.pendingIdeas || 0} Ideas Available</div>
           <p className="text-xs text-slate-500">Auto-picks next pending topic</p>
         </Card>
 
@@ -176,7 +175,7 @@ export default function OverviewTab({
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Posts Published</span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-xl font-bold text-white">{stats.publishedPosts || 0} Posts</div>
+          <div className="text-xl font-bold text-slate-100">{stats.publishedPosts || 0} Posts</div>
           <p className="text-xs text-slate-500">View detailed analytics in Analytics tab</p>
         </Card>
       </div>

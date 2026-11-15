@@ -10,7 +10,7 @@ export function Card({ className, ...props }) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm text-slate-100 shadow-sm',
+        'rounded-2xl border border-slate-800 bg-slate-900/90 text-slate-100 shadow-[0_6px_24px_rgba(38,45,43,0.055)]',
         className
       )}
       {...props}
@@ -25,7 +25,7 @@ export function CardHeader({ className, ...props }) {
 export function CardTitle({ className, ...props }) {
   return (
     <h3
-      className={cn('text-base font-semibold leading-none tracking-tight text-white', className)}
+      className={cn('text-base font-semibold leading-none tracking-tight text-slate-100', className)}
       {...props}
     />
   );
@@ -45,7 +45,7 @@ export function CardFooter({ className, ...props }) {
 
 export function Button({ className, variant = 'default', size = 'default', ...props }) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50 active:scale-95 cursor-pointer text-xs';
+    'inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] cursor-pointer text-xs';
   const variants = {
     default: 'bg-blue-600 text-white hover:bg-blue-500 shadow-sm shadow-blue-600/20',
     secondary: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
@@ -93,7 +93,7 @@ export function Input({ className, ...props }) {
   return (
     <input
       className={cn(
-        'flex h-9 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 font-sans',
+        'flex h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-1 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 font-sans',
         className
       )}
       {...props}
@@ -105,7 +105,7 @@ export function Textarea({ className, ...props }) {
   return (
     <textarea
       className={cn(
-        'flex w-full rounded-lg border border-slate-800 bg-slate-950 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 font-sans',
+        'flex w-full rounded-xl border border-slate-800 bg-slate-900 p-3 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 font-sans',
         className
       )}
       {...props}
@@ -117,7 +117,7 @@ export function Select({ className, children, ...props }) {
   return (
     <select
       className={cn(
-        'flex h-9 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-1 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 font-sans',
+        'flex h-10 w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-1 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 font-sans',
         className
       )}
       {...props}

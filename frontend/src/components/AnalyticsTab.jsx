@@ -51,7 +51,7 @@ export default function AnalyticsTab({ posts = [] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
           <BarChart2 className="w-5 h-5 text-blue-400" />
           LinkedIn Growth Analytics & Recruiter Reach
         </h2>
@@ -130,15 +130,15 @@ export default function AnalyticsTab({ posts = [] }) {
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                  <XAxis dataKey="name" stroke="#64748B" fontSize={11} />
-                  <YAxis stroke="#64748B" fontSize={11} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e3e5df" />
+                  <XAxis dataKey="name" stroke="#65737a" fontSize={11} />
+                  <YAxis stroke="#65737a" fontSize={11} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0B0F17', borderColor: '#334155', borderRadius: '8px' }}
-                    labelStyle={{ color: '#F1F5F9' }}
+                    contentStyle={{ backgroundColor: '#fffefa', borderColor: '#d8ddd7', borderRadius: '12px', color: '#222b31' }}
+                    labelStyle={{ color: '#222b31' }}
                   />
-                  <Line type="monotone" dataKey="impressions" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="reactions" stroke="#10B981" strokeWidth={2} />
+                  <Line type="monotone" dataKey="impressions" stroke="#c6533d" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="reactions" stroke="#378a72" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -161,13 +161,13 @@ export default function AnalyticsTab({ posts = [] }) {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={langComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="language" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={11} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e3e5df" />
+                <XAxis dataKey="language" stroke="#65737a" fontSize={12} />
+                <YAxis stroke="#65737a" fontSize={11} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0B0F17', borderColor: '#334155', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: '#fffefa', borderColor: '#d8ddd7', borderRadius: '12px', color: '#222b31' }}
                 />
-                <Bar dataKey="avgViews" fill="#8B5CF6" radius={[6, 6, 0, 0]} name="Avg Impressions" />
+                <Bar dataKey="avgViews" fill="#8659b6" radius={[6, 6, 0, 0]} name="Avg Impressions" />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -65,11 +65,34 @@ export function safeJsonParse(rawText) {
   }
 }
 
+function normalizeGeneratedDraft(parsed, { topic, language, modelUsed }) {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('AI response must be a JSON object.');
+  }
+
+  if (typeof parsed.postText !== 'string' || !parsed.postText.trim()) {
+    throw new Error('AI response did not include post text.');
+  }
+
+  return {
+    ...parsed,
+    success: true,
+    topic,
+    language,
+    hook: typeof parsed.hook === 'string' ? parsed.hook : parsed.postText.split('\n')[0],
+    firstCommentText: typeof parsed.firstCommentText === 'string' ? parsed.firstCommentText : '',
+    charCount: parsed.postText.length,
+    visualCard: parsed.visualCard && typeof parsed.visualCard === 'object' ? parsed.visualCard : {},
+    modelUsed
+  };
+}
+
 export async function generatePostWithAI({ topic, language = 'EN', level = 'Mid' }) {
   const config = loadConfig();
   const env = loadEnv();
   const inspiration = loadInspiration();
-  const pastPosts = loadPosts().slice(-5);
+  // New posts are unshifted into the beginning of posts.json.
+  const pastPosts = loadPosts().slice(0, 5);
   const profile = config.profile || {};
   const style = config.style || {};
   const isArabic = language === 'AR';
@@ -79,6 +102,9 @@ export async function generatePostWithAI({ topic, language = 'EN', level = 'Mid'
 
   const endingStyle = style.endingStyle || 'strong_conclusion';
   const includeGithub = style.includeGithubInComment === true;
+  const hashtagLimit = Number.isInteger(style.maxHashtags) && style.maxHashtags > 0
+    ? style.maxHashtags
+    : 3;
 
   let endingRule = '';
   if (endingStyle === 'strong_conclusion') {
@@ -109,7 +135,7 @@ export async function generatePostWithAI({ topic, language = 'EN', level = 'Mid'
 2. Tell a real production story or share an honest developer battle scar ("The first time I Dockerized NestJS, I thought a 5-line Dockerfile was all it took... 😅").
 3. BAN CORPORATE AI CLICHÉS: NEVER use buzzwords like "delve", "testament", "revolutionize", "game-changer", "tapestry", "landscape", "in conclusion", "vital", "in today's fast-paced world", "harness", "leverage".`;
 
-  const systemInstruction = `
+  const defaultSystemInstruction = `
 You are Serag, a passionate, highly relatable Backend & Fullstack Software Engineer writing personal, highly engaging, community-loved LinkedIn posts.
 Your posts frequently go viral among developers, engineering managers, and tech recruiters because you share real production battle scars, honest trial-and-error, and practical architectural schemas with zero corporate fluff or academic lecturing.
 
@@ -119,6 +145,7 @@ AUTHOR PERSONA:
 - Years of Experience: ${profile.yearsOfExperience || 'Junior to Mid-Senior'}
 - Primary Tech Stack: ${profile.primaryTechStack || 'Node.js, NestJS, Express, PostgreSQL, Redis, Docker, System Design, MongoDB, Clean Architecture'}
 - Target Audience: Software Engineers, Engineering Managers, Tech Recruiters, and Fellow Builders
+- Editorial tone: ${style.tone || 'Conversational, pragmatic, engineering-first, and free of corporate buzzwords'}
 
 AUTHENTIC WRITING BLUEPRINT:
 1. ${languageRule}
@@ -145,10 +172,10 @@ AUTHENTIC WRITING BLUEPRINT:
      * The post body MUST deliver the complete, actionable, step-by-step production fix with clear bold headers or numbered points (e.g. "1. ضبط الـ Threadpool:", "2. فصل الـ CPU Tasks بـ Worker Threads:", "3. التحويل لـ Background Queue مع Redis & BullMQ:").
      * Include exact configuration decisions, technical trade-offs, and practical reasoning so the reader gets a complete, high-value engineering playbook.
    - The Senior Pragmatic Takeaway: A relatable analogy or philosophical engineering rule (e.g., "في الآخر، الـ Main Thread في Node.js زي الكاشير في المطعم: وظيفته ياخد الأوردرات بسرعة ويسلمها للمطبخ، مش يدخل المطبخ يطبخ بنفسه 😅").
-   - Friendly Community Sign-off: An open invitation for peer thoughts or production experiences (e.g., "قابلت المشكلة دي قبل كده؟ وبتحلها إزاي عندك في Production؟").
+   - Ending: ${endingRule} Do not add a second question after a strong conclusion.
    - Post Length: Between ${style.targetCharMin || 1050} and ${style.targetCharMax || 1650} characters with plenty of depth and breathing room.
 
-4. HASHTAGS: Exactly 3 to 5 relevant technical hashtags at the very bottom (e.g. #nodejs #backend #systemdesign #docker #devops).
+4. HASHTAGS: Use no more than ${hashtagLimit} relevant technical hashtags at the very bottom (e.g. #nodejs #backend #systemdesign).
 5. ${commentRule}
 6. VISUAL CARD SPEC: Provide data for a modern technical visual card (code snippet, benchmark comparison, or key takeaways). Select a diverse visual style from: 'paper' (warm notebook / handwritten notes / sticky pads), 'painted' (vibrant artistic canvas poster), 'blueprint' (CAD architectural blueprint), 'brutalist' (high-contrast neo-brutalism creator card), or 'terminal' (dark cyber IDE studio). All visualCard text, titles, snippets, and takeaways MUST be in English Latin letters even if the post body is Arabic.
 
@@ -158,6 +185,13 @@ ${inspiration || 'No past inspiration posts provided.'}
 RECENT PAST POSTS FOR CONTINUITY:
 ${JSON.stringify(pastPosts.map(p => ({ topic: p.topic, hook: p.hook })), null, 2)}
 `;
+
+  const customSystemPrompt = typeof style.customSystemPrompt === 'string'
+    ? style.customSystemPrompt.trim().slice(0, 12000)
+    : '';
+  const systemInstruction = customSystemPrompt
+    ? `${customSystemPrompt}\n\nOUTPUT CONTRACT: Return exactly one valid JSON object with hook, postText, firstCommentText, charCount, and visualCard fields. Do not wrap it in Markdown.`
+    : defaultSystemInstruction;
 
   const userPrompt = `
 Generate a LinkedIn post about this topic:
@@ -200,7 +234,10 @@ You MUST respond strictly in valid JSON matching this schema:
     const openai = getOpenAIClient();
     if (!openai) {
       console.warn('[AI] OPENAI_API_KEY is missing. Using template fallback.');
-      return getFallbackDraft({ topic, language, level, profile, style });
+      return {
+        ...getFallbackDraft({ topic, language, level, profile, style }),
+        warning: 'OpenAI is not configured. This template is a preview only and cannot be published.'
+      };
     }
 
     try {
@@ -217,13 +254,7 @@ You MUST respond strictly in valid JSON matching this schema:
       });
 
       const parsed = safeJsonParse(completion.choices[0].message.content);
-      return {
-        success: true,
-        ...parsed,
-        language,
-        topic,
-        modelUsed: `OpenAI ${model}`
-      };
+      return normalizeGeneratedDraft(parsed, { topic, language, modelUsed: `OpenAI ${model}` });
     } catch (error) {
       console.error('OpenAI generation error:', error);
       const fallback = getFallbackDraft({ topic, language, level, profile, style });
@@ -238,7 +269,10 @@ You MUST respond strictly in valid JSON matching this schema:
   const ai = getGeminiClient();
   if (!ai) {
     console.warn('[AI] GEMINI_API_KEY is missing. Using template fallback.');
-    return getFallbackDraft({ topic, language, level, profile, style });
+    return {
+      ...getFallbackDraft({ topic, language, level, profile, style }),
+      warning: 'Gemini is not configured. This template is a preview only and cannot be published.'
+    };
   }
 
   const primaryModel = aiConfig.geminiModel || 'gemini-3.5-flash';
@@ -263,13 +297,7 @@ You MUST respond strictly in valid JSON matching this schema:
       });
 
       const parsed = safeJsonParse(response.text);
-      return {
-        success: true,
-        ...parsed,
-        language,
-        topic,
-        modelUsed: `Gemini ${model}`
-      };
+      return normalizeGeneratedDraft(parsed, { topic, language, modelUsed: `Gemini ${model}` });
     } catch (error) {
       console.warn(`[AI] Gemini model ${model} failed: ${error.message}. Trying next candidate...`);
       lastError = error;

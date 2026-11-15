@@ -19,7 +19,7 @@
     "enabled": true,
     "cronSchedule": "45 8 * * *",
     "timezone": "Africa/Cairo",
-    "languageMode": "AR",
+    "languageMode": "alternate",
     "nextLanguage": "AR",
     "includeVisualCard": true,
     "autoPostFirstComment": false,
@@ -33,6 +33,9 @@
     "tone": "Ultra-human, pragmatic, engineering-first, zero corporate buzzwords",
     "endingStyle": "strong_conclusion",
     "includeGithubInComment": false,
-    "preserveEnglishConcepts": true
+    "preserveEnglishConcepts": true,
+    "customSystemPrompt": "",
+    "visualStyle": "auto",
+    "visualTheme": "indigo"
   }
 }

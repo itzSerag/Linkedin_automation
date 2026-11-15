@@ -6,13 +6,21 @@ export default function IdeaBankTab({ ideas = [], onAddIdea, onDeleteIdea, onAiB
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTopic, setNewTopic] = useState('');
   const [newLang, setNewLang] = useState('EN');
+  const [isSavingIdea, setIsSavingIdea] = useState(false);
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!newTopic.trim()) return;
-    onAddIdea({ topic: newTopic.trim(), language: newLang });
-    setNewTopic('');
-    setShowAddForm(false);
+    if (!newTopic.trim() || isSavingIdea) return;
+    setIsSavingIdea(true);
+    try {
+      const succeeded = await onAddIdea({ topic: newTopic.trim(), language: newLang });
+      if (succeeded !== false) {
+        setNewTopic('');
+        setShowAddForm(false);
+      }
+    } finally {
+      setIsSavingIdea(false);
+    }
   };
 
   const pendingIdeas = ideas.filter(i => i.status === 'pending');
@@ -22,7 +30,7 @@ export default function IdeaBankTab({ ideas = [], onAddIdea, onDeleteIdea, onAiB
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-amber-400" />
             Engineering Idea Bank
           </h2>
@@ -47,7 +55,7 @@ export default function IdeaBankTab({ ideas = [], onAddIdea, onDeleteIdea, onAiB
       {showAddForm && (
         <Card className="p-5 border-blue-500/30">
           <form onSubmit={handleAddSubmit} className="space-y-3">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Add New Topic to Pipeline</h3>
+            <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider">Add New Topic to Pipeline</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
                 <Input
@@ -66,7 +74,7 @@ export default function IdeaBankTab({ ideas = [], onAddIdea, onDeleteIdea, onAiB
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="ghost" onClick={() => setShowAddForm(false)}>Cancel</Button>
-              <Button type="submit" variant="default">Save to Bank</Button>
+              <Button type="submit" variant="default" disabled={isSavingIdea}>{isSavingIdea ? 'Saving…' : 'Save to Bank'}</Button>
             </div>
           </form>
         </Card>

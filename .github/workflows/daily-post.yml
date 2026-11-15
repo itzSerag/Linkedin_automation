@@ -2,9 +2,13 @@ name: Daily LinkedIn Post Pipeline
 
 on:
   schedule:
-    # Runs at 06:38 UTC daily (around 08:40 - 08:45 AM Cairo time, avoiding the :00/:15/:30/:45 runner traffic spikes)
+    # GitHub Actions cron uses UTC. This is the single scheduled publisher for the project.
     - cron: '38 6 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: daily-linkedin-post
+  cancel-in-progress: false
 
 jobs:
   publish-daily-post:

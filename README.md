@@ -1,75 +1,56 @@
-# LinkedIn Growth & Personal Branding Studio (Fullstack React + Node.js)
+# LinkedIn Growth Studio
 
-An autonomous, engineer-first personal branding pipeline designed to post daily high-impact technical content on LinkedIn to maximize recruiter reach, interviews, and professional engagement.
+A local React dashboard and Node.js API for drafting, previewing, and publishing LinkedIn posts, with a GitHub Actions workflow for scheduled publishing.
 
----
+## Run locally
 
-## 🌟 Architecture & Best Practices
-
-* **Frontend:** React 19, Vite, Tailwind CSS, shadcn/ui-inspired primitives, Recharts, and Lucide Icons.
-* **Backend:** Node.js, Express, Google GenAI SDK, OpenAI SDK, LinkedIn OAuth 2.0 & UGC Posts API, Cloudinary, Sharp, and node-cron.
-* **Analytics Engine:** Interactive graphs for impression velocity, reactions, and Arabic 🇸🇦 vs. English 🇬🇧 reach comparisons.
-* **Autonomous Cloud Runner:** GitHub Actions 24/7 cron (`.github/workflows/daily-post.yml`) that posts daily at **08:45 AM Africa/Cairo (The Golden Recruiter Slot)** even if your laptop is completely turned off.
-* **AI Hook & Viral Strength Scorer:** Automatically scores posts (1-10) before publishing based on hook curiosity, character count (850-1300), and discussion triggers.
-* **Telegram Bot Integration:** Sends instant post confirmations, live LinkedIn links, visual cards, and a 45-minute post-publish alert to reply to comments.
-
----
-
-## 🚀 Running the Studio
+Requires Node.js 22 or later.
 
 From the project root:
 
 ```bash
-# Start both Backend API (:3001) and React Frontend (:3000) concurrently:
 npm run dev
 ```
 
-Then open your browser at:
-👉 **`http://localhost:3000`**
+Open `http://localhost:3000`. The Vite frontend proxies API and media requests to the Node server on port `3001`.
 
-### Other Handy Scripts
-* `npm run build`: Builds the production bundle of the React frontend into `frontend/dist`.
-* `npm run server`: Starts only the Node.js API server.
-* `npm run client`: Starts only the Vite React frontend.
+Other commands:
 
----
+- `npm run build` builds the React frontend into `frontend/dist`.
+- `npm run server` starts the Node server and serves `frontend/dist` when it has been built.
+- `npm run client` starts only the Vite frontend; it expects the API server on port `3001`.
 
-## 📁 Repository Structure
+## Scheduled publishing
 
+GitHub Actions is the sole scheduled runner. The local server does not start a second timer. The schedule is defined in `.github/workflows/daily-post.yml` using UTC; edit that workflow to change the run time. The **Automated Publishing** setting in the dashboard enables or pauses the workflow’s publishing pipeline.
+
+Workflow runs share a concurrency group, and the pipeline skips scheduled runs when automation is disabled, LinkedIn is disconnected, or the AI provider only returns fallback text. Fallback text remains available as a preview and cannot be published.
+
+The workflow needs the LinkedIn, AI provider, and optional Cloudinary and Telegram credentials configured as GitHub repository secrets. It commits updated post history, ideas, and language rotation back to the repository. Commit and push `config.json` after changing the persona, writing prompt, or visual preferences if you want scheduled posts to use them.
+
+## Project layout
+
+```text
+src/
+  server.js               Express API and local static serving
+  config.js               JSON and environment persistence
+  services/
+    gemini.js             Gemini/OpenAI generation and connection checks
+    scheduler.js          Shared scheduled and manual post pipeline
+    linkedin.js           OAuth and LinkedIn publishing
+    visualCard.js         Post image generation
+    cloudinary.js         Image upload and local fallback
+    telegram.js           Notifications
+  scripts/cli-post.js     GitHub Actions entry point
+  public/media/           Generated local media files
+frontend/
+  src/                    React dashboard and components
+data/
+  ideas.json              Topic idea bank
+  posts.json              Post history and engagement metrics
+  inspiration.md          Imported reference posts
+.github/workflows/
+  daily-post.yml          Scheduled GitHub Actions runner
 ```
-Linkedin_automation/
-├── backend/
-│   ├── src/
-│   │   ├── server.js             # Express API & proxy routes
-│   │   ├── config.js             # Environment & settings loader
-│   │   ├── services/
-│   │   │   ├── ai.js             # Gemini & OpenAI multi-model provider
-│   │   │   ├── visualCard.js     # Dark-mode technical card generator (Sharp)
-│   │   │   ├── cloudinary.js     # Cloudinary CDN uploader
-│   │   │   ├── linkedin.js       # LinkedIn OAuth & first-comment publisher
-│   │   │   ├── telegram.js       # Real-time alerts with live links & previews
-│   │   │   └── scheduler.js      # Daily node-cron scheduler (08:45 AM Cairo)
-│   │   └── scripts/
-│   │       └── cli-post.js       # Headless CLI for GitHub Actions
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ui/               # shadcn/ui components (Card, Button, Badge, etc.)
-│   │   │   ├── OverviewTab.jsx   # Status badges, quick actions, activity
-│   │   │   ├── AnalyticsTab.jsx  # Recharts graphs & engagement metrics
-│   │   │   ├── PersonaTab.jsx    # Engineering resume & background editor
-│   │   │   ├── IdeaBankTab.jsx   # Topic manager & AI brainstormer
-│   │   │   ├── PostsTab.jsx      # Post history, feedback loop, CSV importer
-│   │   │   ├── SettingsTab.jsx   # Multi-AI model selection & API keys
-│   │   │   └── PostPreviewModal.jsx # Viral score analyzer & preview modal
-│   │   ├── App.jsx               # Main React dashboard
-│   │   └── index.css             # Tailwind CSS & animations
-│   └── vite.config.js
-├── data/
-│   ├── ideas.json                # Topic idea bank (pending / used)
-│   ├── posts.json                # Post history & feedback loop analytics
-│   └── inspiration.md            # Reference high-performing posts
-├── .github/workflows/
-│   └── daily-post.yml            # 24/7 cloud runner for GitHub Actions
-└── config.json
-```
+
+The older standalone HTML files under `src/public` are no longer served as a dashboard fallback; the React app is the active UI.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Select, Badge, LinkedInIcon } from './ui';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Textarea, Select, Badge, LinkedInIcon } from './ui';
 import {
   Settings,
   Cpu,
@@ -36,13 +36,14 @@ export default function SettingsTab({
   const [tgChatId, setTgChatId] = useState('');
 
   const [autoSchedule, setAutoSchedule] = useState('false');
-  const [cronSchedule, setCronSchedule] = useState('45 8 * * *');
   const [langMode, setLangMode] = useState('alternate');
   const [autoFirstComment, setAutoFirstComment] = useState('true');
-  const [goldenHourAlert, setGoldenHourAlert] = useState('true');
 
   const [endingStyle, setEndingStyle] = useState('strong_conclusion');
   const [includeGithubInComment, setIncludeGithubInComment] = useState('false');
+  const [customSystemPrompt, setCustomSystemPrompt] = useState('');
+  const [visualStyle, setVisualStyle] = useState('auto');
+  const [visualTheme, setVisualTheme] = useState('auto');
 
   useEffect(() => {
     if (config.ai) {
@@ -53,13 +54,14 @@ export default function SettingsTab({
     if (config.style) {
       setEndingStyle(config.style.endingStyle || 'strong_conclusion');
       setIncludeGithubInComment(String(config.style.includeGithubInComment ?? false));
+      setCustomSystemPrompt(config.style.customSystemPrompt || '');
+      setVisualStyle(config.style.visualStyle || 'auto');
+      setVisualTheme(config.style.visualTheme || 'auto');
     }
     if (config.automation) {
       setAutoSchedule(String(config.automation.enabled ?? false));
-      setCronSchedule(config.automation.cronSchedule || '45 8 * * *');
       setLangMode(config.automation.languageMode || 'alternate');
       setAutoFirstComment(String(config.automation.autoPostFirstComment ?? true));
-      setGoldenHourAlert(String(config.automation.goldenHourAlert ?? true));
     }
     if (env) {
       setGeminiKey(env.GEMINI_API_KEY || '');
@@ -78,15 +80,16 @@ export default function SettingsTab({
       style: {
         endingStyle,
         includeGithubInComment: includeGithubInComment === 'true',
+        customSystemPrompt,
+        visualStyle,
+        visualTheme,
         preserveEnglishConcepts: true,
         tone: 'Ultra-human, pragmatic, engineering-first, zero corporate buzzwords'
       },
       automation: {
         enabled: autoSchedule === 'true',
-        cronSchedule,
         languageMode: langMode,
-        autoPostFirstComment: autoFirstComment === 'true',
-        goldenHourAlert: goldenHourAlert === 'true'
+        autoPostFirstComment: autoFirstComment === 'true'
       },
       envUpdates: {
         GEMINI_API_KEY: geminiKey,
@@ -106,7 +109,7 @@ export default function SettingsTab({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             <Settings className="w-5 h-5 text-blue-400" />
             Integrations & Multi-AI Controls
           </h2>
@@ -129,7 +132,7 @@ export default function SettingsTab({
                 <Cpu className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">AI Content Generation Engine</h3>
+                <h3 className="text-base font-bold text-slate-100">AI Content Generation Engine</h3>
                 <p className="text-xs text-slate-400">Choose between Google Gemini or OpenAI ChatGPT</p>
               </div>
             </div>
@@ -225,7 +228,7 @@ export default function SettingsTab({
                 <LinkedInIcon className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">LinkedIn Official API Connection</h3>
+                <h3 className="text-base font-bold text-slate-100">LinkedIn Official API Connection</h3>
                 <p className="text-xs text-slate-400">OAuth 2.0 with w_member_social scope for posting and media</p>
               </div>
             </div>
@@ -273,7 +276,7 @@ export default function SettingsTab({
                 <Send className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Telegram Notifications</h3>
+                <h3 className="text-base font-bold text-slate-100">Telegram Notifications</h3>
                 <p className="text-xs text-slate-400">Sends instant post confirmation, live LinkedIn link, and visual card</p>
               </div>
             </div>
@@ -322,7 +325,7 @@ export default function SettingsTab({
                 <Cloud className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Cloudinary CDN Media Storage</h3>
+                <h3 className="text-base font-bold text-slate-100">Cloudinary CDN Media Storage</h3>
                 <p className="text-xs text-slate-400">Hosts all generated visual cards and post media</p>
               </div>
             </div>
@@ -350,7 +353,7 @@ export default function SettingsTab({
         {/* Human Voice & Post Style */}
         <Card className="p-6 border-blue-500/30 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               Human Voice & Post Structure Rules
             </h3>
             <Badge variant="default">Anti-AI Fluff</Badge>
@@ -385,26 +388,72 @@ export default function SettingsTab({
               </div>
               <Badge variant="success">Always Active</Badge>
             </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-semibold text-slate-300" htmlFor="custom-post-system-prompt">Custom post system prompt</label>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setCustomSystemPrompt('')}>Use built-in prompt</Button>
+              </div>
+              <Textarea
+                id="custom-post-system-prompt"
+                value={customSystemPrompt}
+                onChange={(e) => setCustomSystemPrompt(e.target.value)}
+                rows={8}
+                maxLength={12000}
+                placeholder="Describe the voice, structure, humor, examples, and technical depth you want. Leave blank to use the built-in prompt."
+                className="font-mono text-xs leading-relaxed"
+              />
+              <p className="text-xs text-slate-500">
+                Your prompt replaces the built-in writing instructions. The output schema and publishing checks remain enforced. Commit <code>config.json</code> for scheduled GitHub runs to use changes. {customSystemPrompt.length.toLocaleString()} / 12,000 characters.
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Visual card style</label>
+              <Select value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)}>
+                <option value="auto">Let the AI choose</option>
+                <option value="paper">Paper / editorial</option>
+                <option value="painted">Painted / expressive</option>
+                <option value="blueprint">Blueprint</option>
+                <option value="brutalist">Brutalist</option>
+                <option value="terminal">Terminal</option>
+              </Select>
+              <p className="text-xs text-slate-500">A fixed style overrides the model’s choice.</p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-300">Visual card accent</label>
+              <Select value={visualTheme} onChange={(e) => setVisualTheme(e.target.value)}>
+                <option value="auto">Let the AI choose</option>
+                <option value="indigo">Indigo</option>
+                <option value="emerald">Emerald</option>
+                <option value="violet">Violet</option>
+                <option value="amber">Amber</option>
+                <option value="cyan">Cyan</option>
+              </Select>
+              <p className="text-xs text-slate-500">Use an accent that fits your post series.</p>
+            </div>
           </div>
         </Card>
 
         {/* Scheduling Rules */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-sm font-bold text-white border-b border-slate-800 pb-2">Scheduler & Golden Slot Rules</h3>
+          <h3 className="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2">Scheduler & Golden Slot Rules</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-400">Auto-Schedule Status</label>
+              <label className="text-xs font-medium text-slate-400">Automated Publishing</label>
               <Select value={autoSchedule} onChange={(e) => setAutoSchedule(e.target.value)}>
                 <option value="false">Disabled (Manual Only)</option>
-                <option value="true">Enabled (Autonomous Cron)</option>
+                <option value="true">Enabled (GitHub Actions)</option>
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-400">Daily Post Time (Cron)</label>
-              <Input value={cronSchedule} onChange={(e) => setCronSchedule(e.target.value)} className="font-mono text-xs" />
-              <p className="text-xs text-slate-500">Default: `45 8 * * *` (08:45 AM Cairo - Golden Recruiter Slot)</p>
+            <div className="sm:col-span-2 p-3 rounded-lg bg-slate-950 border border-slate-800">
+              <p className="text-xs font-semibold text-slate-200">GitHub Actions owns the daily schedule</p>
+              <p className="text-xs text-slate-500 mt-1">
+                The local app will not start a second timer. To change the run time, edit <code>.github/workflows/daily-post.yml</code> in the repository.
+              </p>
             </div>
 
             <div className="space-y-1">
@@ -416,13 +465,6 @@ export default function SettingsTab({
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-400">Golden 1st Hour Engagement Reminder</label>
-              <Select value={goldenHourAlert} onChange={(e) => setGoldenHourAlert(e.target.value)}>
-                <option value="true">Yes (Telegram alert 45m after posting to reply to comments)</option>
-                <option value="false">No</option>
-              </Select>
-            </div>
           </div>
         </Card>
       </div>

@@ -29,7 +29,7 @@ import {
 import { testCloudinaryConnection, uploadImageToCloudinary } from './services/cloudinary.js';
 import { generateVisualCard } from './services/visualCard.js';
 import { testTelegramConnection } from './services/telegram.js';
-import { executePostPipeline, publishExistingDraft, initScheduler } from './services/scheduler.js';
+import { executePostPipeline, publishExistingDraft } from './services/scheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +38,52 @@ const app = express();
 const env = loadEnv();
 const PORT = env.PORT || 3000;
 
+function parseCsvRows(csvContent) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < csvContent.length; i += 1) {
+    const char = csvContent[i];
+
+    if (inQuotes) {
+      if (char === '"' && csvContent[i + 1] === '"') {
+        field += '"';
+        i += 1;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (char === '"' && field.length === 0) {
+      inQuotes = true;
+    } else if (char === ',') {
+      row.push(field);
+      field = '';
+    } else if (char === '\n' || char === '\r') {
+      row.push(field);
+      if (row.some(value => value.trim())) rows.push(row);
+      row = [];
+      field = '';
+      if (char === '\r' && csvContent[i + 1] === '\n') i += 1;
+    } else {
+      field += char;
+    }
+  }
+
+  if (inQuotes) throw new Error('CSV contains an unclosed quoted field.');
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    if (row.some(value => value.trim())) rows.push(row);
+  }
+
+  return rows;
+}
+
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -45,12 +91,14 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 // Always serve uploaded and generated media statically
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
-// Serve static frontend assets (built React app from frontend/dist if available, else public)
+// Serve the built React app when present. The older public UI is intentionally not a fallback.
 const distPath = path.join(rootDir, 'frontend', 'dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 } else {
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.get('/', (req, res) => {
+    res.status(503).send('React frontend is not built. Run `npm run dev` for local development or `npm run build` before starting the server.');
+  });
 }
 
 // 1. System Status
@@ -112,6 +160,16 @@ app.post('/api/config', (req, res) => {
   const { profile, ai, automation, style, envUpdates } = req.body;
   const currentConfig = loadConfig();
 
+  if (style?.customSystemPrompt !== undefined && (typeof style.customSystemPrompt !== 'string' || style.customSystemPrompt.length > 12000)) {
+    return res.status(400).json({ error: 'Custom post prompt must be text no longer than 12,000 characters.' });
+  }
+  if (style?.visualStyle !== undefined && !['auto', 'paper', 'painted', 'blueprint', 'brutalist', 'terminal'].includes(style.visualStyle)) {
+    return res.status(400).json({ error: 'Unsupported visual card style.' });
+  }
+  if (style?.visualTheme !== undefined && !['auto', 'indigo', 'emerald', 'violet', 'amber', 'cyan'].includes(style.visualTheme)) {
+    return res.status(400).json({ error: 'Unsupported visual card accent.' });
+  }
+
   if (profile) currentConfig.profile = { ...currentConfig.profile, ...profile };
   if (ai) currentConfig.ai = { ...currentConfig.ai, ...ai };
   if (automation) {
@@ -124,22 +182,23 @@ app.post('/api/config', (req, res) => {
   }
   if (style) currentConfig.style = { ...currentConfig.style, ...style };
 
-  saveConfig(currentConfig);
+  if (!saveConfig(currentConfig)) {
+    return res.status(500).json({ error: 'Could not save config.json. Your settings were not applied.' });
+  }
 
   if (envUpdates && typeof envUpdates === 'object') {
     const cleanUpdates = {};
     for (const [k, v] of Object.entries(envUpdates)) {
-      if (v && !v.includes('••••')) {
+      if (typeof v === 'string' && v && !v.includes('••••')) {
         cleanUpdates[k] = v;
       }
     }
     if (Object.keys(cleanUpdates).length > 0) {
-      updateEnv(cleanUpdates);
+      if (!updateEnv(cleanUpdates)) {
+        return res.status(500).json({ error: 'Settings were saved, but environment values could not be written to .env.' });
+      }
     }
   }
-
-  // Restart scheduler with new config
-  initScheduler();
 
   res.json({ success: true, message: 'Settings updated successfully!', config: currentConfig });
 });
@@ -151,7 +210,7 @@ app.get('/api/ideas', (req, res) => {
 
 app.post('/api/ideas', (req, res) => {
   const { topic, category, level, language } = req.body;
-  if (!topic) return res.status(400).json({ error: 'Topic is required' });
+  if (typeof topic !== 'string' || !topic.trim()) return res.status(400).json({ error: 'Topic is required' });
 
   const ideas = loadIdeas();
   const newIdea = {
@@ -165,14 +224,15 @@ app.post('/api/ideas', (req, res) => {
   };
 
   ideas.unshift(newIdea);
-  saveIdeas(ideas);
+  if (!saveIdeas(ideas)) return res.status(500).json({ error: 'Could not save the idea bank.' });
   res.json({ success: true, idea: newIdea });
 });
 
 app.delete('/api/ideas/:id', (req, res) => {
   const ideas = loadIdeas();
   const filtered = ideas.filter(i => i.id !== req.params.id);
-  saveIdeas(filtered);
+  if (filtered.length === ideas.length) return res.status(404).json({ error: 'Idea not found' });
+  if (!saveIdeas(filtered)) return res.status(500).json({ error: 'Could not save the idea bank.' });
   res.json({ success: true, message: 'Idea removed' });
 });
 
@@ -188,7 +248,7 @@ app.post('/api/ideas/ai-generate', async (req, res) => {
     const generated = await generateIdeasWithAI({ count: 5 });
 
     const ideas = loadIdeas();
-    const formatted = generated.map((item, idx) => ({
+    const formatted = (Array.isArray(generated) ? generated : []).filter(item => item && typeof item.topic === 'string' && item.topic.trim()).map((item, idx) => ({
       id: `idea-ai-${Date.now()}-${idx}`,
       topic: item.topic,
       category: item.category || 'Architecture',
@@ -198,8 +258,12 @@ app.post('/api/ideas/ai-generate', async (req, res) => {
       createdAt: new Date().toISOString()
     }));
 
+    if (formatted.length === 0) {
+      return res.status(502).json({ error: 'The AI provider returned no usable ideas. Please try again.' });
+    }
+
     const updated = [...formatted, ...ideas];
-    saveIdeas(updated);
+    if (!saveIdeas(updated)) return res.status(500).json({ error: 'Generated ideas could not be saved.' });
 
     res.json({ success: true, added: formatted });
   } catch (error) {
@@ -220,44 +284,57 @@ app.post('/api/posts/:id/metrics', (req, res) => {
 
   if (!post) return res.status(404).json({ error: 'Post not found' });
 
+  const metrics = { impressions, reactions, comments };
+  for (const [key, value] of Object.entries(metrics)) {
+    if (value === undefined) {
+      delete metrics[key];
+      continue;
+    }
+    const numericValue = Number(value);
+    if (!Number.isInteger(numericValue) || numericValue < 0) {
+      return res.status(400).json({ error: `${key} must be a non-negative whole number.` });
+    }
+    metrics[key] = numericValue;
+  }
+
   post.metrics = {
-    impressions: Number(impressions) || 0,
-    reactions: Number(reactions) || 0,
-    comments: Number(comments) || 0,
+    impressions: post.metrics?.impressions ?? 0,
+    reactions: post.metrics?.reactions ?? 0,
+    comments: post.metrics?.comments ?? 0,
+    ...metrics,
     updatedAt: new Date().toISOString()
   };
 
-  savePosts(posts);
+  if (!savePosts(posts)) return res.status(500).json({ error: 'Could not save post metrics.' });
   res.json({ success: true, post });
 });
 
 // 5. CSV Historical Posts Importer
 app.post('/api/posts/import-csv', (req, res) => {
   const { csvContent } = req.body;
-  if (!csvContent) return res.status(400).json({ error: 'CSV content is required' });
+  if (typeof csvContent !== 'string' || !csvContent.trim()) return res.status(400).json({ error: 'CSV content is required' });
 
   try {
-    const lines = csvContent.split('\n');
-    if (lines.length < 2) return res.status(400).json({ error: 'Invalid CSV data' });
+    const rows = parseCsvRows(csvContent);
+    if (rows.length < 2) return res.status(400).json({ error: 'Invalid CSV data. Include a header row and at least one post.' });
 
-    // Simple robust CSV line parser
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    const headers = rows[0].map(value => value.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const textIndex = headers.findIndex(value => ['posttext', 'sharecommentary', 'commentary', 'post', 'content', 'text', 'sharetext', 'share'].includes(value));
+    const likesIndex = headers.findIndex(value => /like|reaction/.test(value));
+    const commentsIndex = headers.findIndex(value => /^(comments?|commentcount|numberofcomments)$/.test(value) || (value.includes('comment') && !value.includes('commentary') && !value.includes('text')));
     const importedPosts = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      
-      // Match comma separated or quoted values
-      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-      const row = matches.map(m => m.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+    if (textIndex < 0) {
+      return res.status(400).json({ error: 'Could not identify a post text column. Include a Post, Share, Commentary, Content, or Text header.' });
+    }
 
-      const postText = row[0] || '';
+    for (const row of rows.slice(1)) {
+      const postText = String(row[textIndex] || '').trim();
       if (postText.length > 80) {
         importedPosts.push({
           text: postText,
-          likes: Number(row[1]) || 0,
-          comments: Number(row[2]) || 0
+          likes: Number(String(row[likesIndex] || '').replace(/[,_\s]/g, '')) || 0,
+          comments: Number(String(row[commentsIndex] || '').replace(/[,_\s]/g, '')) || 0
         });
       }
     }
@@ -266,8 +343,9 @@ app.post('/api/posts/import-csv', (req, res) => {
       return res.status(400).json({ error: 'No valid post texts found in CSV' });
     }
 
-    // Sort by engagement or pick top 5
-    const topPosts = importedPosts.slice(0, 5);
+    const topPosts = importedPosts
+      .sort((a, b) => (b.likes + b.comments) - (a.likes + a.comments))
+      .slice(0, 5);
     const inspirationPath = path.join(rootDir, 'data', 'inspiration.md');
     let currentInspiration = loadInspiration();
 
@@ -365,8 +443,11 @@ app.post('/api/run-now', async (req, res) => {
 // 7.1 Publish Existing Previewed Draft (Direct Publish - Zero Duplicate Generation)
 app.post('/api/publish-draft', async (req, res) => {
   const { draft } = req.body;
-  if (!draft || !draft.postText) {
+  if (!draft || typeof draft.postText !== 'string' || !draft.postText.trim()) {
     return res.status(400).json({ error: 'Valid draft with postText is required' });
+  }
+  if (draft.isMock) {
+    return res.status(422).json({ error: draft.warning || 'Fallback previews cannot be published.' });
   }
   try {
     const result = await publishExistingDraft(draft);
@@ -419,12 +500,20 @@ app.post('/api/generate-preview', async (req, res) => {
       level: profile.yearsOfExperience || 'Mid'
     });
 
+    if (draft?.isMock && !draft.warning) {
+      draft.warning = 'AI generation is unavailable. This fallback preview cannot be published.';
+    }
+
     // Generate real visual card for preview
     const cardData = draft.visualCard || {};
     const cardBuffer = await generateVisualCard({
-      style: cardData.style || null,
+      style: config.style?.visualStyle && config.style.visualStyle !== 'auto'
+        ? config.style.visualStyle
+        : cardData.style || null,
       type: cardData.type || 'takeaways',
-      theme: cardData.theme || null,
+      theme: config.style?.visualTheme && config.style.visualTheme !== 'auto'
+        ? config.style.visualTheme
+        : cardData.theme || null,
       title: cardData.title || draft.topic,
       subtitle: cardData.subtitle || '',
       codeSnippet: cardData.codeSnippet || '',
@@ -473,12 +562,9 @@ app.get('/api/auth/linkedin/callback', async (req, res) => {
   }
 });
 
-// Initialize scheduler on server boot
-initScheduler();
-
 app.listen(PORT, () => {
   console.log(`\n======================================================`);
   console.log(`🚀 LinkedIn Automation Server running at http://localhost:${PORT}`);
-  console.log(`📊 Open your browser at http://localhost:${PORT} to access the Dashboard`);
+  console.log(`📊 For local dashboard development, run npm run dev (frontend on :3000)`);
   console.log(`======================================================\n`);
 });
