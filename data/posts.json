@@ -1,26 +1,5 @@
 [
   {
-    "id": "post_1794579290336",
-    "topic": "بناء أنظمة (Distributed Systems) قادرة على الصمود: كيف يمكنك إدارة الـ Data Consistency بين الـ PostgreSQL والـ Redis باستخدام نمط الـ Transactional Outbox؟",
-    "language": "AR",
-    "hook": "في أول مرة كتبت الكود اللي بيسجل الداتا في PostgreSQL وبعدها يمسح أو يحدد الكاش في Redis، كنت فاكر الموضوع هيخلص في سطرين Async/Await وخلاص.. لكن مع أول Production Spike و Network Timeout اكتشفت إننا وقعنا في فخ الـ Dual Write Problem 😅",
-    "postText": "في أول مرة كتبت الكود اللي بيسجل الداتا في PostgreSQL وبعدها يمسح أو يحدد الكاش في Redis، كنت فاكر الموضوع هيخلص في سطرين Async/Await وخلاص.. لكن مع أول Production Spike و Network Timeout اكتشفت إننا وقعنا في فخ الـ Dual Write Problem 😅\n\nالمشكلة كانت بتظهر كالتالي:\n- كتبت الداتا في PostgreSQL بنجاح 👍\n- جيت تعمل Update أو Invalidate في Redis.. الـ Connection فصلت أو السيرفر وقع 💥\n- النتيجة؟ PostgreSQL فيها الداتا الجديدة، و Redis فيها الداتا القديمة (Stale Data)، والـ Users بيشوفوا داتا غلط تماماً!\n\nوحتى لو اعكست الترتيب، الـ Race Conditions والـ Network Failures هتضمن لك إن الـ Data Consistency بين السيرفرات تروح في داهية.\n\nعشان نحل الكارثة دي ونضمن 100% Data Consistency، الحل الإحترافي في الـ Distributed Systems هو نمط الـ Transactional Outbox Pattern:\n\n1. جدول الـ Outbox في الداتابيز:\nبنعمل Table جديد اسمه `outbox` جوه PostgreSQL في نفس الداتابيز جنب جدول الـ Orders أو الـ Users.\n\n2. الـ Atomic ACID Transaction:\nلما ييجي Request جديد، بدل ما نكلم Redis أو نبعت Event برة الكود مباشرة، بنكتب الـ Order ونكتب الـ Event جوه جدول الـ `outbox` في نفس الـ Database Transaction:\n`BEGIN; INSERT INTO orders ...; INSERT INTO outbox ...; COMMIT;`\nكده بنضمن يا إما الاتنين يتسيفوا سوا، يا إما مفيش حاجة تتسيف أبداً!\n\n3. الـ Background Worker (أو CDC):\nبيبقى عندنا Background Worker منفصل بيفحص جدول الـ `outbox` دورياً، وياخد الـ Pending Events يبعتها لـ Redis أو Message Broker زي RabbitMQ / Kafka.\n\n4. الـ Idempotency و الـ Mark as Processed:\nأول ما Event يوصل لـ Redis بنجاح، الـ Worker بيعلم على الـ Row إنه `PROCESSED`. ولو حصل Failure في السكة؟ الـ Worker هيعيد إرسال الـ Event تاني مع ضمان At-Least-Once Delivery.\n\nفي الآخر، الـ Distributed Systems ملهاش أمان، والـ Dual Write المباشر في الكود هو أكتر حاجة هتجيبلك كوابيس في الإنتاج. لما تفصل كُتابة الـ Events عن الـ Network Delivery، السيستم بتاعك بيبقى Resilient وبيرجع يلم نفسه حتى لو Redis وقعت ساعتين! 🚀\n\nبتتعاملوا إزاي مع الـ Dual Write Problem في مشاريعكم؟ بتحبوا الـ Polling Outbox ولا الـ CDC مع Debezium؟\n\nملحوظه الارقام تقريبيه مش benchmark\n\n#postgresql #redis #systemdesign #backend #architecture",
-    "firstCommentText": "",
-    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794578215/linkedin_posts/preview_1794578216313_1794578216315.png",
-    "isLocalMedia": false,
-    "cardType": "takeaways",
-    "publishedToLinkedIn": true,
-    "postUrn": "urn:li:share:7527011087548940288",
-    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7527011087548940288/",
-    "firstCommentStatus": null,
-    "metrics": {
-      "impressions": 0,
-      "reactions": 0,
-      "comments": 0
-    },
-    "createdAt": "2026-11-13T14:14:50.336Z"
-  },
-  {
     "id": "post_1794576883442",
     "topic": "لماذا يجب أن تتوقف عن استخدام الـ ORM في العمليات المعقدة؟ تحليل أداء الـ Query Execution Plan عند التعامل مع آلاف الـ Records في PostgreSQL.",
     "language": "AR",
