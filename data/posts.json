@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794752148980",
+    "topic": "كيف تسبب الـ Connection Pooling الخاطئ بين Node.js و PostgreSQL في حوادث Memory Leaks واختناق الـ Event Loop أثناء الـ Traffic Spikes، وكيف ضبطنا PgBouncer في بيئة Docker لحلها",
+    "language": "AR",
+    "hook": "في أول مرة واجهنا Traffic Spike عالي على سيستم Node.js مع PostgreSQL، كنت فاكر إن الحل الطبيعي هو إني أزود الـ `max` connections في الـ Connection Pool من 10 لـ 50.. لكن أول ما ضرب الـ Traffic، السيرفر وقع بنفسه والموضوع دخل في حوار كبير 😅",
+    "postText": "في أول مرة واجهنا Traffic Spike عالي على سيستم Node.js مع PostgreSQL، كنت فاكر إن الحل الطبيعي هو إني أزود الـ `max` connections في الـ Connection Pool من 10 لـ 50.. لكن أول ما ضرب الـ Traffic، السيرفر وقع بنفسه والموضوع دخل في حوار كبير 😅\n\nبدأت تظهر مشاكل غريبة وسريعة في Production:\n- الـ Memory بتاع PostgreSQL بيزيد بشكل مرعب.\n- الـ Latency ضرب في السقف والـ Event Loop بتاع Node.js حصل له Stall وخنق الريكويستات.\n- وظهرت الـ Error الشهير: `FATAL: sorry, too many clients already`.\n\nالسبب؟ PostgreSQL بيعمل OS Process مستقلة لكل Connection جديدة، وكل Process بتستهلك حوالي 5-10 MB من الـ RAM غير الـ Context Switching العالي. فلما تزود عدد الـ Docker Containers وكل Container فتحت 50 Connection، أنت بتخنق الداتابيز بآلاف الـ Sockets العطلانة!\n\nعشان نحل المشكلة دي في Production، عملنا Architecture Schema جديدة:\n\n1. تقليل الـ App Connection Pool Size:\nقللنا الـ Pool Size على مستوى كل Node.js instance لـ 5 Connections فقط! في الـ Async Non-blocking I/O، أنت مش محتاج Connections أكتر من عدد الـ DB CPU Cores المتاحة.\n\n2. إدخال PgBouncer كـ Lightweight Proxy جوه Docker:\nشغلنا PgBouncer Container قدام PostgreSQL مباشرة. التطبيق بيتكلم مع PgBouncer خفيف جداً، وهو اللي بيتكلم مع PostgreSQL بعدد محدد ومحكوم من الـ Real Connections.\n\n3. ضبط الـ Transaction Pooling Mode:\nظبطنا الـ `pool_mode = transaction`. هنا PgBouncer بيحجز الـ DB Connection الحقيقية فقط أثناء وقت تنفيذ الـ SQL Query أو الـ Transaction، وبمجرد ما تخلص بيرجع الـ Connection للـ Pool فوراً لخدمة Request تاني!\n\nالنتيجة؟ قللنا الـ Postgres Memory Consumption بـ 75% وسحبنا أكثر من 10x Traffic بدون أي Connection Timeout وفي التمااام 👍\n\nفي الآخر، الـ Database Connections مش ببلاش، وزيادة الـ Pool Size مش معناه زيادة الـ Performance.. غالباً معناه خنق للـ CPU ورشوة للـ Memory 😅\n\nبتديروا الـ Connection Pooling إزاي عندكم في Production وقت الـ Spikes؟ وهل شغالين بـ PgBouncer ولا AWS RDS Proxy؟\n\n#postgresql #nodejs #systemdesign #docker #backend",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794752147/linkedin_posts/post_1794752147235_1794752147236.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7527736114766323712",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7527736114766323712/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-15T14:15:48.980Z"
+  },
+  {
     "id": "post_1794663966337",
     "topic": "بناء أنظمة (Distributed Systems) قادرة على الصمود: كيف يمكنك إدارة الـ Data Consistency بين الـ PostgreSQL والـ Redis باستخدام نمط الـ Transactional Outbox؟",
     "language": "AR",
