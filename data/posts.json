@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1794932913566",
+    "topic": "لماذا قد يفشل الـ Distributed Locking عبر Redis (Redlock Algorithm) في الأنظمة الموزعة عند حدوث Clock Drift أو Node.js GC Pauses، وكيف تتجنب تضارب البيانات (Data Corruption)",
+    "language": "AR",
+    "hook": "في أول مرة استخدمت فيها Redlock عشان أمنع Race Condition على مستوى Distributed System، كنت فاكر إن طالما الـ Lock معملوله Acquire في Redis يبقى مستحيل نسختين من الخدمة ينفذوا نفس الـ Critical Section في نفس الوقت.. لحد ما حصل الكابوس في Production 😅",
+    "postText": "في أول مرة استخدمت فيها Redlock عشان أمنع Race Condition على مستوى Distributed System، كنت فاكر إن طالما الـ Lock معملوله Acquire في Redis يبقى مستحيل نسختين من الخدمة ينفذوا نفس الـ Critical Section في نفس الوقت.. لحد ما حصل الكابوس في Production 😅\n\nاللي حصل كان غريب جداً: نفس الطلب اتنفذ مرتين والبيانات اتلخبطت (Data Corruption)، رغم إن الـ Distributed Lock كان شغال وسليم! لما حفرنا في الـ Logs اكتشفنا حقيقتين مرعبتين في الأنظمة الموزعة:\n\n1. مشكلة الـ Node.js GC Pauses (Stop-The-World):\nالخدمة طلبت Lock بـ TTL قدره 5 ثواني. مباشرة بعد ما خدت الـ Lock، الـ Garbage Collection وقف الـ Event Loop تماماً لمدة 6 ثواني! في الوقت ده، الـ TTL انتهى في Redis وخدمة تانية أخدت الـ Lock واشتغلت. أول ما الـ GC خلص، الخدمة الأولية كملت تنفيذ عادي جداً وكأن شيئاً لم يكن، والنتيجتين كتبوا في الـ Database في نفس الوقت!\n\n2. مشكلة الـ Clock Drift & NTP Sync:\nلو السيرفرات بتعتمد على Wall Clock وتزامن NTP، ودقيقة أو ثانية واحدة اتعدلت في وقت السيرفر، الـ Lock هيحصل له Expire أسرع بكثير من المتوقع.\n\nازاي حلينا المشكلة ومنعنا الـ Data Corruption في Production؟\n\n1. الـ Fencing Tokens (المفتاح السحري لحماية الـ Storage):\nبطلنا نعتمد على الـ Lock لوحده في حماية الـ Writes! بقينا نولد Monotonic Counter مع كل Lock طلب (مثلاً fencing_token = 83). وبقينا نبعت الرقم ده مع الـ Write Request للـ PostgreSQL. الداتابيز بتعدل البيانات بشرط إن الـ Token يكون أكبر من آخر Token اتكتب (`token > last_seen_token`). لو الخدمة الأولى صحيت من الـ GC Pause وحاولت تكتب بـ Token 83 بعد ما الخدمة التانية كتبت بـ Token 84، الـ DB برفض الـ Request فوراً!\n\n2. استخدام Auto-Extension (Lock Heartbeat):\nبدل ما نحط TTL كبير من الأول، بنعمل Lock Heartbeat يجدد الـ Lease بـ Background Process طول ما الـ Execution شغال فعلياً مش واقف.\n\nفي الآخر، القاعدة الذهببية في الـ System Design: الـ Distributed Lock في Redis وظيفته Efficiency (عشان توفر شغل مكرر)، مش Correctness 100%! لو محتاج Correctness يمنع الـ Data Corruption تماماً، لازم الـ Storage Engine نفسه هو اللي يرفض الـ Stale Writes.\n\nالنظام الموزع الآمن هو اللي مبيفترضش إن الساعة صح، ولا إن الـ Thread مش هيقف لثواني.\n\n#systemdesign #redis #backend",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1794932912/linkedin_posts/post_1794932911939_1794932911940.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7528494297441038336",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7528494297441038336/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-17T16:28:33.566Z"
+  },
+  {
     "id": "post_1794576883442",
     "topic": "لماذا يجب أن تتوقف عن استخدام الـ ORM في العمليات المعقدة؟ تحليل أداء الـ Query Execution Plan عند التعامل مع آلاف الـ Records في PostgreSQL.",
     "language": "AR",
