@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795104215531",
+    "topic": "Why your Redis cache might be slowing down your PostgreSQL database: Understanding the 'Cache Stampede' and how to solve it with Probabilistic Early Recomputation.",
+    "language": "EN",
+    "hook": "The first time I implemented Redis caching for our heaviest PostgreSQL query, I honestly thought our latency problems were solved forever. Then our cache key expired during peak traffic, and PostgreSQL CPU spiked to 100% in seconds 😅",
+    "postText": "The first time I implemented Redis caching for our heaviest PostgreSQL query, I honestly thought our latency problems were solved forever. Then our cache key expired during peak traffic, and PostgreSQL CPU spiked to 100% in seconds 😅\n\nWhat we ran into is a classic production trap known as the 'Cache Stampede' (or Thundering Herd problem):\n- A high-traffic key (like a product catalog payload) hits its TTL and expires.\n- Hundreds of concurrent API requests hit a Redis miss at the exact same millisecond.\n- Instead of 1 database query, 500 requests bypass Redis and slam PostgreSQL simultaneously to recompute the exact same payload.\n- Connection pools exhaust, query latency explodes, and your cache end up DDOSing your primary DB.\n\nHere is the step-by-step production fix to eliminate Cache Stampedes:\n\n1. The Naive Fix (Distributed Locking):\nAcquire a Redis lock (`SETNX`) on cache miss. Only the lock holder queries Postgres; other requests wait or return stale data. Works fine, but adds lock contention overhead and risks deadlocks if the lock owner crashes.\n\n2. The Production Fix (Probabilistic Early Recomputation / XFetch):\nInstead of waiting for the TTL to reach zero, recalculate the key *probabilistically* before it expires using the XFetch algorithm:\n`- delta * beta * log(rand()) > remaining_ttl`\n- `delta`: Execution time required to compute the query.\n- `beta`: Constant parameter (> 0, usually 1.0) controlling aggressiveness.\n- `rand()`: Pseudorandom number between 0 and 1.\n\n3. The Execution Flow:\n- When a request reads the cache, it reads both the payload and the delta metadata.\n- As the key approaches expiration, the probability of triggering an early refresh grows exponentially.\n- The first request to hit the probabilistic trigger updates the cache asynchronously in the background while returning the valid cached value instantly to the user.\n- The cache is refreshed before TTL ever hits zero, ensuring 0 database spikes under heavy load.\n\nIn the end, standard TTL caching treats cache lifetime like a hard wall. Probabilistic caching treats it like a gradient—refreshing hot data seamlessly while the cache is still warm.\n\nThe most resilient caching strategy isn't the one that holds the most keys, but the one that protects your database when those keys expire.\n\n#redis #postgresql #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795104213/linkedin_posts/post_1795104213486_1795104213487.png",
+    "isLocalMedia": false,
+    "cardType": "code",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7529212788192411648",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7529212788192411648/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-19T16:03:35.531Z"
+  },
+  {
     "id": "post_1794932913566",
     "topic": "لماذا قد يفشل الـ Distributed Locking عبر Redis (Redlock Algorithm) في الأنظمة الموزعة عند حدوث Clock Drift أو Node.js GC Pauses، وكيف تتجنب تضارب البيانات (Data Corruption)",
     "language": "AR",
