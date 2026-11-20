@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795190650499",
+    "topic": "Beyond simple joins: Designing a low-latency relational schema for high-throughput social feeds using materialized views and Redis sorted sets.",
+    "language": "EN",
+    "hook": "The first time I built a social activity feed, I honestly thought a simple SQL JOIN between followers and posts with ORDER BY created_at DESC LIMIT 20 was all it took. Then reality hit hard in production:",
+    "postText": "The first time I built a social activity feed, I honestly thought a simple SQL JOIN between followers and posts with ORDER BY created_at DESC LIMIT 20 was all it took. Then reality hit hard in production:\n\n- Query latencies spiked past 3.5 seconds as the followers table grew past 2M rows.\n- PostgreSQL CPU hit 100% due to non-stop disk sorts and sequential index scans.\n- Deep pagination with OFFSET caused DB connection pool exhaustion during peak hours.\n\nWe had to stop forcing the relational database to compute joins on every single read. Here is the low-latency hybrid schema that dropped feed latency to < 10ms:\n\n1. Pre-Sorted Timeline Caching (Redis ZSETs):\nWe store timeline feeds per active user in Redis Sorted Sets (user:123:feed). The score is the UNIX timestamp, and the value is the post_id. Fetching page 1 is an ultra-fast ZREVRANGE running in O(log N + M) time.\n\n2. Hybrid Fan-Out (Push vs. Pull Model):\n- Standard Users (< 5k followers): PUSH model. When a user creates a post, a background queue worker pushes the post_id into all followers' Redis ZSETs asynchronously.\n- High-Follower Accounts (> 5k followers): PULL model. We don't fan out to millions of Redis keys. Instead, we pull celebrity posts at read-time and merge them in-memory with the cached ZSET.\n\n3. Decoupled Payload Hydration:\nThe Redis ZSET only stores post IDs. Once the top 20 IDs are retrieved, we fetch full post objects using Redis MGET (or an indexed PostgreSQL WHERE id IN (...) batch query).\n\nIn high-throughput feed design, reads must be trivial even if writes do a bit of extra background work. Pre-building state asynchronously is how you survive peak traffic.\n\nThe cleanest system architectures turn expensive read-time computations into predictable, background queue operations.\n\n#backend #systemdesign #redis",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795190648/linkedin_posts/post_1795190648192_1795190648193.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7529575321788977155",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7529575321788977155/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-20T16:04:10.499Z"
+  },
+  {
     "id": "post_1795104215531",
     "topic": "Why your Redis cache might be slowing down your PostgreSQL database: Understanding the 'Cache Stampede' and how to solve it with Probabilistic Early Recomputation.",
     "language": "EN",
