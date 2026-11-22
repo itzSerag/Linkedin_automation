@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795359060345",
+    "topic": "Why relying on standard Redis TTLs in high-throughput Node.js microservices causes Cache Stampedes (and how implementing the XFetch Probabilistic Early Expiration algorithm fixed our 99th percentile latency spikes)",
+    "language": "EN",
+    "hook": "The first time I added a 5-minute TTL to our hottest Redis key, I honestly thought our database load was solved for good. Then peak traffic hit, the key expired, and PostgreSQL CPU spiked to 100% in seconds 😅",
+    "postText": "The first time I added a 5-minute TTL to our hottest Redis key, I honestly thought our database load was solved for good. Then peak traffic hit, the key expired, and PostgreSQL CPU spiked to 100% in seconds 😅\n\nHere is what went wrong under heavy production load:\n- Thousands of concurrent requests hit the backend right as the key TTL reached zero.\n- Every single Node.js worker suffered a cache miss at the exact same millisecond (the classic Thundering Herd / Cache Stampede).\n- Thousands of identical heavy queries hammered the main database, turning 2ms Redis reads into a 4,500ms p99 latency spike.\n\nSetting a hard Redis TTL creates a dangerous binary cliff: data instantly flips from 100% cached to 0% cached across every service instance simultaneously.\n\nHere is how we solved it in production using the XFetch probabilistic algorithm:\n\n1. Probabilistic Early Recomputation:\nInstead of waiting for `TTL <= 0`, we evaluate a probabilistic condition on every read: `-delta * beta * Math.log(Math.random()) > TTL`. Here `delta` is the time (in ms) it takes to recompute the value, and `beta` is an aggressiveness multiplier.\n\n2. Dynamic Triggering:\nAs the key gets closer to its expiration time, the probability of returning `true` increases based on how expensive the query actually is. A fast query triggers recomputation late; a heavy 500ms query triggers recomputation early.\n\n3. Single-Flight Async Refresh:\nThe single request that triggers the early recomputation acquires a light distributed lock to update Redis asynchronously in the background. Meanwhile, all other concurrent incoming requests continue receiving the warm cache data uninterrupted.\n\nIn high-throughput microservices, an expiring cache shouldn't feel like jumping off a cliff. It should feel like a smooth relay race where fresh data is fetched long before the timer runs out.\n\nThe best caching architecture doesn't just hold data—it completely hides the cost of computation before your users ever notice.\n\n#redis #nodejs #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795359058/linkedin_posts/post_1795359058768_1795359058769.png",
+    "isLocalMedia": false,
+    "cardType": "code",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7530281686341730304",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7530281686341730304/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-22T14:51:00.345Z"
+  },
+  {
     "id": "post_1795273105895",
     "topic": "Docker Multi-stage builds are not enough: Optimizing Node.js container startup time and memory footprint for serverless-like cold start performance.",
     "language": "EN",
