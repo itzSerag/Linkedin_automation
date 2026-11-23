@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795459561584",
+    "topic": "Stop using stateless JWTs for real-time session revocation: Scaling Express & Socket.io to 1M concurrent connections using a hybrid Redis Bloom Filter + PostgreSQL architecture",
+    "language": "EN",
+    "hook": "The first time I relied purely on stateless JWTs for real-time WebSocket authorization, I honestly thought we hit the jackpot—zero database hits per event! Then security asked to instantly ban a compromised account with 50,000 active Socket.io connections 😅",
+    "postText": "The first time I relied purely on stateless JWTs for real-time WebSocket authorization, I honestly thought we hit the jackpot—zero database hits per event! Then security asked to instantly ban a compromised account with 50,000 active Socket.io connections 😅\n\nStateless JWTs sound amazing on paper, but the moment you need real-time session revocation at scale, you hit a massive wall:\n- Validating JWTs against PostgreSQL on every message frame destroys your database CPU.\n- Checking Redis key existence for 1M active connections on every event turns network I/O into your main bottleneck.\n- Doing nothing means compromised sockets stay connected until the token expires minutes or hours later.\n\nInstead of choosing between zero control and burnt infrastructure, we built a scalable hybrid schema:\n\n1. Validate Heavily at Handshake Only:\nVerify the JWT signature and claims only once during the initial Socket.io handshake. Store the `userId` and `sessionId` in the socket's internal data context.\n\n2. In-Memory Bloom Filter for Fast Negatives:\nKeep a probabilistic Redis Bloom Filter of revoked session IDs synced across nodes. If the filter returns false, the token is guaranteed NOT revoked—zero DB or Redis lookups required for normal messages.\n\n3. Async Revocation Fan-Out via Redis Pub/Sub:\nWhen an admin revokes a session, save the revocation in PostgreSQL, add the `sessionId` to the Bloom filter, and publish a message over Redis Pub/Sub. All Socket.io server instances pick up the event and disconnect the target socket immediately.\n\nStateless authorization isn't a silver bullet; it's a compromise between latency and control. Real-time backend architecture works best when you validate heavy once, check state in-memory, and push revocation events asynchronously.\n\n#nodejs #backend #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795459560/linkedin_posts/post_1795459559718_1795459559719.png",
+    "isLocalMedia": false,
+    "cardType": "benchmark",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7530703218729746432",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7530703218729746432/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-23T18:46:01.584Z"
+  },
+  {
     "id": "post_1795359060345",
     "topic": "Why relying on standard Redis TTLs in high-throughput Node.js microservices causes Cache Stampedes (and how implementing the XFetch Probabilistic Early Expiration algorithm fixed our 99th percentile latency spikes)",
     "language": "EN",
