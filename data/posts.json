@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795543924470",
+    "topic": "Optimizing Dockerized React & Node.js apps for heavy data tables: Replacing REST pagination with Server-Sent Events (SSE) and Redis Read-Through Pipelines to drop TTFB by 75%",
+    "language": "EN",
+    "hook": "The first time I built an admin dashboard to render 100k data rows in React, I honestly thought standard REST pagination with Node.js and PostgreSQL was all it took. Then reality hit hard in production:",
+    "postText": "The first time I built an admin dashboard to render 100k data rows in React, I honestly thought standard REST pagination with Node.js and PostgreSQL was all it took. Then reality hit hard in production:\n\n- TTFB crawled past 3.2 seconds on deep page numbers.\n- PostgreSQL CPU pegged at 95% because of SQL `OFFSET` scans.\n- Users were staring at blank screens waiting for giant JSON arrays to complete.\n\nWe stopped trying to micro-optimize SQL queries and restructured the entire data flow:\n\n1. Cursors over SQL OFFSET:\nWe replaced `OFFSET 50000` with indexed cursor pagination (`WHERE created_at < cursor`). Query execution time dropped from 1,200ms to 4ms regardless of table depth.\n\n2. Redis Read-Through Pipelining:\nInstead of hitting the DB for active filter states, we pre-warm record fragments in Redis and fetch them in batches using `redis.pipeline()`. This batches dozens of key lookups into a single network round-trip without blocking the Node.js event loop.\n\n3. Server-Sent Events (SSE) in Express:\nInstead of buffering the entire payload before sending a response, Express sets `Content-Type: text/event-stream`. The backend streams data chunks to the client as soon as Redis yields them.\n\n4. Progressive React Table Rendering:\nReact appends incoming SSE chunks directly into a virtualized table via `useSyncExternalStore`. The client renders page-1 rows in under 180ms while background chunks populate smoothly.\n\nTraditional REST pagination is like waiting for a truck to load 10,000 items before leaving the warehouse. SSE streaming starts delivering the first package the second it hits the conveyor belt.\n\nThe fastest user experience isn't about making your database 10% faster—it's about fundamentally changing when and how data hits the wire.\n\n#nodejs #react #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795543922/linkedin_posts/post_1795543922142_1795543922143.png",
+    "isLocalMedia": false,
+    "cardType": "benchmark",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7531057060868976640",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7531057060868976640/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-24T18:12:04.470Z"
+  },
+  {
     "id": "post_1795459561584",
     "topic": "Stop using stateless JWTs for real-time session revocation: Scaling Express & Socket.io to 1M concurrent connections using a hybrid Redis Bloom Filter + PostgreSQL architecture",
     "language": "EN",
