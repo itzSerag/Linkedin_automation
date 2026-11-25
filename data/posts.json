@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795628136944",
+    "topic": "Stop using Redis as a Session Store without configuring eviction policies: How `allkeys-lru` silently destroys active JWT blacklists during memory spikes",
+    "language": "EN",
+    "hook": "The first time I used Redis to handle active JWT blacklists alongside application caching, I honestly thought standard Redis eviction configs were totally fine. Then a traffic spike hit max memory, and reality hit hard 😅",
+    "postText": "The first time I used Redis to handle active JWT blacklists alongside application caching, I honestly thought standard Redis eviction configs were totally fine. Then a traffic spike hit max memory, and reality hit hard 😅\n\nHere is what silently went wrong in production:\n- We ran a single Redis instance storing both hot API cache keys and revoked JWT tokens.\n- The eviction policy was configured to `allkeys-lru` (Least Recently Used across ALL keys).\n- As memory hit capacity, Redis started purging older keys to make room for fresh cache writes.\n- Revoked JWT keys for logged-out users got wiped out, while high-frequency API cache keys stayed alive.\n- The result? Banned users and revoked tokens were suddenly accepted by our API gateways because the blacklist keys were quietly evicted!\n\nHere is the practical production fix we implemented:\n\n1. Separate Caching from Security State:\nNever share a Redis instance between volatile application caches (re-buildable) and authorization state (non-rebuildable). We split Redis into two isolated instances.\n\n2. Switch Policy to `noeviction` for Auth Data:\nOn the authentication Redis instance, set `maxmemory-policy noeviction`. If memory fills up, Redis throws an explicit write error instead of silently dropping active blacklisted tokens. Memory alerts trigger before disaster hits.\n\n3. Calculate Precise TTLs on Token Revocation:\nSet the key TTL to exactly equal the token's remaining lifespan (`exp - current_timestamp`). Once the JWT naturally expires, Redis cleans it up automatically without needing eviction.\n\nIn backend engineering, volatile memory algorithms should never dictate security rules. A cache miss costs extra milliseconds, but a silently evicted security key compromises your entire auth system.\n\nThe best security architecture fails explicitly and loudly rather than silently passing revoked tokens in production.\n\n#redis #backend #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795628135/linkedin_posts/post_1795628135117_1795628135119.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7531410274516381696",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7531410274516381696/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-25T17:35:36.944Z"
+  },
+  {
     "id": "post_1795543924470",
     "topic": "Optimizing Dockerized React & Node.js apps for heavy data tables: Replacing REST pagination with Server-Sent Events (SSE) and Redis Read-Through Pipelines to drop TTFB by 75%",
     "language": "EN",
