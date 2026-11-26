@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795713313757",
+    "topic": "The React-Express payload bottleneck: How naive REST API schemas cause client-side N+1 fetch waterfalls and trigger Docker container CPU throttling",
+    "language": "EN",
+    "hook": "The first time I shipped a 'simple' dashboard using REST endpoints to fetch related entities in React, I honestly thought it would be smooth sailing. Then the network tab turned into a waterfall of death and my Node.js containers started throwing 503s under load 😅",
+    "postText": "The first time I shipped a 'simple' dashboard using REST endpoints to fetch related entities in React, I honestly thought it would be smooth sailing. Then the network tab turned into a waterfall of death and my Node.js containers started throwing 503s under load 😅\n\nIt wasn't just slow UI—it was a full-blown infrastructure crisis. Here’s why your React-Express architecture might be failing:\n\n1. The N+1 Fetch Waterfall: Your React components are likely triggering sequential API calls. Component A fetches a list of IDs, then calls the backend again for every single item. That’s 50 HTTP roundtrips just to render a single list.\n\n2. The CPU Throttling Trigger: Express isn't magically async-proof. If you handle these 50 concurrent requests by doing heavy object mapping or nested database joins in the main event loop, you block the thread. When Kubernetes notices that CPU spike, it throttles the container, causing a domino effect of timeouts.\n\n3. The Fix: Stop fetching fragments. \n- Data Normalization: Shift to a single 'Bulk' endpoint that uses SQL 'IN' clauses or Prisma 'findMany' with include statements.\n- Redis Cache-Aside: Cache the response of the bulk fetch so the DB doesn't sweat during the next page refresh.\n- Response Transformation: If you have strict schema needs, keep the transformation logic at the edge or use a lightweight Data Loader to batch those requests at the ORM layer.\n\nAt the end of the day, the Main Thread in Node.js is like a cashier at a busy cafe: its job is to take the order and hand it off, not to go back to the kitchen and bake the cake itself. Designing APIs to return complete, hydrated objects is the only way to keep your infrastructure from choking on its own traffic. \n\n#nodejs #react #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795713312/linkedin_posts/post_1795713311902_1795713311903.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7531767531586478080",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7531767531586478080/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-26T17:15:13.757Z"
+  },
+  {
     "id": "post_1795628136944",
     "topic": "Stop using Redis as a Session Store without configuring eviction policies: How `allkeys-lru` silently destroys active JWT blacklists during memory spikes",
     "language": "EN",
