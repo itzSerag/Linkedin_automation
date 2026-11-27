@@ -165,8 +165,9 @@
     "category": "Backend Performance",
     "level": "Mid/Senior",
     "language": "EN",
-    "status": "pending",
-    "createdAt": "2026-11-09T14:00:00.000Z"
+    "status": "used",
+    "createdAt": "2026-11-09T14:00:00.000Z",
+    "usedAt": "2026-11-27T17:00:21.607Z"
   },
   {
     "id": "idea-5",

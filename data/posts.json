@@ -1,5 +1,26 @@
 [
   {
+    "id": "post_1795798821606",
+    "topic": "Connection Pooling in Node.js & PostgreSQL: The silent memory and socket bottleneck when traffic spikes",
+    "language": "EN",
+    "hook": "The first time I scaled our Node.js microservices to handle a sudden traffic spike, I honestly thought spin-up autoscaling was all we needed. Then PostgreSQL ran out of sockets, CPU hit 100%, and incoming API requests crashed in a chain reaction 😅",
+    "postText": "The first time I scaled our Node.js microservices to handle a sudden traffic spike, I honestly thought spin-up autoscaling was all we needed. Then PostgreSQL ran out of sockets, CPU hit 100%, and incoming API requests crashed in a chain reaction 😅\n\nHere is what actually happened behind the scenes:\n- We left Node's `pg.Pool` at default settings (`max: 10` connections per container instance).\n- When Kubernetes autoscaled our service from 5 to 50 pods, active database connections jumped from 50 to 500 instantly.\n- Unlike MySQL which uses lightweight threads, PostgreSQL spawns a full OS process per connection. Each idle connection consumed ~10MB of RAM, causing memory starvation and socket exhaustion on the database host.\n\nHere is the exact production fix we implemented to stabilize the system:\n\n1. Right-Size App-Level Pool Limits:\nWe lowered `max` in `pg.Pool` from 10 down to 3-5 connections per container instance. Node.js handles async concurrency brilliantly; a single app instance rarely needs dozens of open DB sockets at once.\n\n2. Enforce Strict Timeouts:\nConfigured `connectionTimeoutMillis: 2000` (fail fast instead of hanging HTTP requests) and `idleTimeoutMillis: 10000` to aggressively reclaim unused sockets.\n\n3. Deploy PgBouncer in Transaction Mode:\nWe placed PgBouncer between Node.js and PostgreSQL. Node pods can open 1,000 transient connections to PgBouncer, while PgBouncer multiplexes them down to just 20-30 real PostgreSQL server backends executing queries.\n\nPostgres connections are like heavy machinery—opening one is expensive and memory-intensive, not a lightweight callback. \n\nThe best backend architecture isn't the one that scales app containers to infinity—it's the one that protects your database from drowning when they do.\n\n#nodejs #postgresql #systemdesign",
+    "firstCommentText": "",
+    "mediaUrl": "https://res.cloudinary.com/difafacvw/image/upload/v1795798819/linkedin_posts/post_1795798819741_1795798819742.png",
+    "isLocalMedia": false,
+    "cardType": "takeaways",
+    "publishedToLinkedIn": true,
+    "postUrn": "urn:li:share:7532126178720280577",
+    "postUrl": "https://www.linkedin.com/feed/update/urn:li:share:7532126178720280577/",
+    "firstCommentStatus": null,
+    "metrics": {
+      "impressions": 0,
+      "reactions": 0,
+      "comments": 0
+    },
+    "createdAt": "2026-11-27T17:00:21.606Z"
+  },
+  {
     "id": "post_1795713313757",
     "topic": "The React-Express payload bottleneck: How naive REST API schemas cause client-side N+1 fetch waterfalls and trigger Docker container CPU throttling",
     "language": "EN",
